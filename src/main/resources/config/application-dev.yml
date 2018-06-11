@@ -6,8 +6,8 @@ logging:
 
 spring:
     profiles:
-        active: dev
-        include: swagger
+        active: prod
+        include: no-swagger
     devtools:
         restart:
             enabled: true

@@ -24,7 +24,7 @@ import java.time.Instant;
  */
 
 @org.springframework.data.mongodb.core.mapping.Document(collection = "user")
-public class User extends AbstractAuditingEntity implements Serializable {
+public class User  implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 

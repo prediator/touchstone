@@ -59,7 +59,7 @@ public class AccountResource {
         if (!checkPasswordLength(managedUserVM.getPassword())) {
             throw new InvalidPasswordException();
         }
-        userRepository.findOneByLogin(managedUserVM.getUserId().toLowerCase()).ifPresent(u -> {throw new LoginAlreadyUsedException();});
+       // userRepository.findOneByLogin(managedUserVM.getUserId().toLowerCase()).ifPresent(u -> {throw new LoginAlreadyUsedException();});
         userRepository.findOneByEmailIgnoreCase(managedUserVM.getEmailId()).ifPresent(u -> {throw new EmailAlreadyUsedException();});
         User user = userService.registerUser(managedUserVM, managedUserVM.getPassword());
         mailService.sendActivationEmail(user);
@@ -127,7 +127,7 @@ public class AccountResource {
             throw new InternalServerErrorException("User could not be found");
         }
         userService.updateUser(userDTO.getFirstName(), userDTO.getLastName(), userDTO.getEmailId(),
-            userDTO.getLangKey(), userDTO.getImageUrl());
+            null,null);
    }
 
     /**

@@ -1,91 +1,183 @@
 package com.touchstone.service.dto;
 
-import com.touchstone.config.Constants;
-
-import com.touchstone.domain.Authority;
-import com.touchstone.domain.User;
-
-import org.hibernate.validator.constraints.Email;
-import org.hibernate.validator.constraints.NotBlank;
-
-import javax.validation.constraints.*;
-import java.time.Instant;
+import java.util.Date;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import javax.validation.constraints.Size;
+
+import org.hibernate.validator.constraints.Email;
+
+import com.touchstone.domain.Authority;
+import com.touchstone.domain.Gender;
+import com.touchstone.domain.User;
+import com.touchstone.domain.UserType;
 
 /**
  * A DTO representing a user, with his authorities.
  */
 public class UserDTO {
 
-    private String id;
+	private String id;
 
-    @NotBlank
-    @Pattern(regexp = Constants.LOGIN_REGEX)
-    @Size(min = 1, max = 50)
-    private String userId;
+	private String userId = "tdy";
 
-    @Size(max = 50)
-    private String firstName;
+	@Size(max = 50)
+	private String firstName;
 
-    @Size(max = 50)
-    private String lastName;
+	@Size(max = 50)
+	private String lastName;
 
-    @Email
-    @Size(min = 5, max = 100)
-    private String emailId;
+	@Email
+	@Size(min = 5, max = 100)
+	private String emailId;
 
-    @Size(max = 256)
-    private String imageUrl;
+	private String address1;
 
-    private boolean activated = false;
+	private String address2;
 
-    @Size(min = 2, max = 6)
-    private String langKey;
+	private String city;
 
-    private String createdBy;
+	private String country;
 
-    private Instant createdDate;
+	private Date dob;
 
-    private String lastModifiedBy;
+	private String enterpriseName;
 
-    private Instant lastModifiedDate;
+	private Gender gender;
 
-    private Set<String> authorities;
+	private String langKey;
 
-    public UserDTO() {
-        // Empty constructor needed for Jackson.
-    }
+	private String mobile;
 
-    public UserDTO(User user) {
-        this.id = user.getUserId();
-        this.userId = user.getLogin();
-        this.firstName = user.getFirstName();
-        this.lastName = user.getLastName();
-        this.emailId = user.getEmail();
-        this.activated = user.getActivated();
-        this.imageUrl = user.getImageUrl();
-        this.langKey = user.getLangKey();
-        this.createdBy = user.getCreatedBy();
-        this.createdDate = user.getCreatedDate();
-        this.lastModifiedBy = user.getLastModifiedBy();
-        this.lastModifiedDate = user.getLastModifiedDate();
-        this.authorities = user.getAuthorities().stream()
-            .map(Authority::getName)
-            .collect(Collectors.toSet());
-    }
+	private String state;
 
-    public String getId() {
-        return id;
-    }
+	private UserType userType;
 
-    public void setId(String id) {
-        this.id = id;
-    }
+	private String zipcode;
+	private boolean activated = false;
 
-    
+	private Set<String> authorities;
 
-    public String getUserId() {
+	public UserDTO() {
+		// Empty constructor needed for Jackson.
+	}
+
+	public UserDTO(User user) {
+		this.id = user.getUserId();
+		this.userId = user.getLogin();
+		this.firstName = user.getFirstName();
+		this.lastName = user.getLastName();
+		this.emailId = user.getEmail();
+		this.activated = user.getActivated();
+		this.authorities = user.getAuthorities().stream().map(Authority::getName).collect(Collectors.toSet());
+	}
+
+	public String getAddress1() {
+		return address1;
+	}
+
+	public void setAddress1(String address1) {
+		this.address1 = address1;
+	}
+
+	public String getAddress2() {
+		return address2;
+	}
+
+	public void setAddress2(String address2) {
+		this.address2 = address2;
+	}
+
+	public String getCity() {
+		return city;
+	}
+
+	public void setCity(String city) {
+		this.city = city;
+	}
+
+	public String getCountry() {
+		return country;
+	}
+
+	public void setCountry(String country) {
+		this.country = country;
+	}
+
+	public Date getDob() {
+		return dob;
+	}
+
+	public void setDob(Date dob) {
+		this.dob = dob;
+	}
+
+	public String getEnterpriseName() {
+		return enterpriseName;
+	}
+
+	public void setEnterpriseName(String enterpriseName) {
+		this.enterpriseName = enterpriseName;
+	}
+
+	public Gender getGender() {
+		return gender;
+	}
+
+	public void setGender(Gender gender) {
+		this.gender = gender;
+	}
+
+	public String getLangKey() {
+		return langKey;
+	}
+
+	public void setLangKey(String langKey) {
+		this.langKey = langKey;
+	}
+
+	public String getMobile() {
+		return mobile;
+	}
+
+	public void setMobile(String mobile) {
+		this.mobile = mobile;
+	}
+
+	public String getState() {
+		return state;
+	}
+
+	public void setState(String state) {
+		this.state = state;
+	}
+
+	public UserType getUserType() {
+		return userType;
+	}
+
+	public void setUserType(UserType userType) {
+		this.userType = userType;
+	}
+
+	public String getZipcode() {
+		return zipcode;
+	}
+
+	public void setZipcode(String zipcode) {
+		this.zipcode = zipcode;
+	}
+
+	public String getId() {
+		return id;
+	}
+
+	public void setId(String id) {
+		this.id = id;
+	}
+
+	public String getUserId() {
 		return userId;
 	}
 
@@ -102,101 +194,43 @@ public class UserDTO {
 	}
 
 	public String getFirstName() {
-        return firstName;
-    }
+		return firstName;
+	}
 
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
-    }
+	public void setFirstName(String firstName) {
+		this.firstName = firstName;
+	}
 
-    public String getLastName() {
-        return lastName;
-    }
+	public String getLastName() {
+		return lastName;
+	}
 
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
-    }
- 
+	public void setLastName(String lastName) {
+		this.lastName = lastName;
+	}
 
-    public String getImageUrl() {
-        return imageUrl;
-    }
+	public boolean isActivated() {
+		return activated;
+	}
 
-    public void setImageUrl(String imageUrl) {
-        this.imageUrl = imageUrl;
-    }
+	public void setActivated(boolean activated) {
+		this.activated = activated;
+	}
 
-    public boolean isActivated() {
-        return activated;
-    }
+	public Set<String> getAuthorities() {
+		return authorities;
+	}
 
-    public void setActivated(boolean activated) {
-        this.activated = activated;
-    }
+	public void setAuthorities(Set<String> authorities) {
+		this.authorities = authorities;
+	}
 
-    public String getLangKey() {
-        return langKey;
-    }
-
-    public void setLangKey(String langKey) {
-        this.langKey = langKey;
-    }
-
-    public String getCreatedBy() {
-        return createdBy;
-    }
-
-    public void setCreatedBy(String createdBy) {
-        this.createdBy = createdBy;
-    }
-
-    public Instant getCreatedDate() {
-        return createdDate;
-    }
-
-    public void setCreatedDate(Instant createdDate) {
-        this.createdDate = createdDate;
-    }
-
-    public String getLastModifiedBy() {
-        return lastModifiedBy;
-    }
-
-    public void setLastModifiedBy(String lastModifiedBy) {
-        this.lastModifiedBy = lastModifiedBy;
-    }
-
-    public Instant getLastModifiedDate() {
-        return lastModifiedDate;
-    }
-
-    public void setLastModifiedDate(Instant lastModifiedDate) {
-        this.lastModifiedDate = lastModifiedDate;
-    }
-
-    public Set<String> getAuthorities() {
-        return authorities;
-    }
-
-    public void setAuthorities(Set<String> authorities) {
-        this.authorities = authorities;
-    }
-
-    @Override
-    public String toString() {
-        return "UserDTO{" +
-            "userId='" + userId + '\'' +
-            ", firstName='" + firstName + '\'' +
-            ", lastName='" + lastName + '\'' +
-            ", emailId='" + emailId + '\'' +
-            ", imageUrl='" + imageUrl + '\'' +
-            ", activated=" + activated +
-            ", langKey='" + langKey + '\'' +
-            ", createdBy=" + createdBy +
-            ", createdDate=" + createdDate +
-            ", lastModifiedBy='" + lastModifiedBy + '\'' +
-            ", lastModifiedDate=" + lastModifiedDate +
-            ", authorities=" + authorities +
-            "}";
-    }
+	@Override
+	public String toString() {
+		return "UserDTO [id=" + id + ", userId=" + userId + ", firstName=" + firstName + ", lastName=" + lastName
+				+ ", emailId=" + emailId + ", address1=" + address1 + ", address2=" + address2 + ", city=" + city
+				+ ", country=" + country + ", dob=" + dob + ", enterpriseName=" + enterpriseName + ", gender=" + gender
+				+ ", langKey=" + langKey + ", mobile=" + mobile + ", state=" + state + ", userType=" + userType
+				+ ", zipcode=" + zipcode + ", activated=" + activated + ", authorities=" + authorities + "]";
+	}
 }
