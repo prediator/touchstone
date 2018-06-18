@@ -16,6 +16,7 @@ import com.codahale.metrics.annotation.Timed;
 import com.touchstone.config.Constants;
 import com.touchstone.service.dto.Consumer;
 import com.touchstone.service.dto.Enterprise;
+import com.touchstone.service.dto.ValidationConsumer;
 
 /**
  * REST controller for managing the current user's account.
@@ -61,6 +62,63 @@ public class ConsumerResource {
 		String uri = new String(Constants.Url + "/Enterprise");
 		rt.postForObject(uri, enterprise, Enterprise.class);
 		return new ResponseEntity(HttpStatus.CREATED);
+
+	}
+
+	/**
+	 * POST /ValidateEmail : email validation
+	 *
+	 * @param email
+	 *            the email data
+	 */
+	@PostMapping("/ValidateEmail")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public ResponseEntity<ValidationConsumer> ValidateEmail(@RequestBody ValidationConsumer email) {
+
+		RestTemplate rt = new RestTemplate();
+		rt.getMessageConverters().add(new StringHttpMessageConverter());
+		String uri = new String(Constants.Url + "/ValidateEmail");
+		ValidationConsumer response = rt.postForObject(uri, email, ValidationConsumer.class);
+		return new ResponseEntity<ValidationConsumer>(response, HttpStatus.CREATED);
+
+	}
+
+	/**
+	 * POST /ValidateMobile : phone validation
+	 *
+	 * @param phone
+	 *            the phone data
+	 */
+	@PostMapping("/ValidateMobile")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public ResponseEntity<ValidationConsumer> ValidateMobile(@RequestBody ValidationConsumer phone) {
+
+		RestTemplate rt = new RestTemplate();
+		rt.getMessageConverters().add(new StringHttpMessageConverter());
+		String uri = new String(Constants.Url + "/ValidateMobile");
+		ValidationConsumer response = rt.postForObject(uri, phone, ValidationConsumer.class);
+		return new ResponseEntity<ValidationConsumer>(response, HttpStatus.CREATED);
+
+	}
+
+	/**
+	 * POST /ValidateMobile : phone validation
+	 *
+	 * @param phone
+	 *            the phone data
+	 */
+	@PostMapping("/ValidateAddress")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public ResponseEntity<ValidationConsumer> ValidateAddress(@RequestBody ValidationConsumer address) {
+
+		RestTemplate rt = new RestTemplate();
+		rt.getMessageConverters().add(new StringHttpMessageConverter());
+		String uri = new String(Constants.Url + "/ValidateAddress");
+		ValidationConsumer response = rt.postForObject(uri, address, ValidationConsumer.class);
+		return new ResponseEntity<ValidationConsumer>(response, HttpStatus.CREATED);
 
 	}
 
