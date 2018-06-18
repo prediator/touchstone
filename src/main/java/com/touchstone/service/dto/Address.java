@@ -3,7 +3,7 @@ package com.touchstone.service.dto;
 import com.touchstone.domain.Gender;
 
 /**
- * A DTO  
+ * A DTO
  */
 public class Address {
 
@@ -15,7 +15,6 @@ public class Address {
 	private int zipcode;
 	private String country;
 	private Boolean isAddressValidated;
-	private String id;
 
 	public String get$class() {
 		return $class;
@@ -81,19 +80,11 @@ public class Address {
 		this.isAddressValidated = isAddressValidated;
 	}
 
-	public String getId() {
-		return id;
-	}
-
-	public void setId(String id) {
-		this.id = id;
-	}
-
 	@Override
 	public String toString() {
 		return "Address [$class=" + $class + ", address1=" + address1 + ", address2=" + address2 + ", city=" + city
 				+ ", state=" + state + ", zipcode=" + zipcode + ", country=" + country + ", isAddressValidated="
-				+ isAddressValidated + ", id=" + id + "]";
+				+ isAddressValidated + "]";
 	}
 
 }

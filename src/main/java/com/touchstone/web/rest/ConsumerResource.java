@@ -3,14 +3,19 @@ package com.touchstone.web.rest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestTemplate;
 
 import com.codahale.metrics.annotation.Timed;
+import com.touchstone.config.Constants;
 import com.touchstone.service.dto.Consumer;
+import com.touchstone.service.dto.Enterprise;
 
 /**
  * REST controller for managing the current user's account.
@@ -22,7 +27,7 @@ public class ConsumerResource {
 	private final Logger log = LoggerFactory.getLogger(ConsumerResource.class);
 
 	/**
-	 * POST /register : register the user.
+	 * POST /register : register Consumer.
 	 *
 	 * @param consumer
 	 *            the consumer data
@@ -30,10 +35,33 @@ public class ConsumerResource {
 	@PostMapping("/Consumer")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public void registerAccount(@RequestBody Consumer consumer) {
-		
-		
-		System.out.println(consumer.toString());
+	public ResponseEntity<String> registerAccount(@RequestBody Consumer consumer) {
+
+		RestTemplate rt = new RestTemplate();
+		rt.getMessageConverters().add(new StringHttpMessageConverter());
+		String uri = new String(Constants.Url + "/Consumer");
+		rt.postForObject(uri, consumer, Consumer.class);
+		return new ResponseEntity(HttpStatus.CREATED);
+
+	}
+
+	/**
+	 * POST /register : register Enterprise.
+	 *
+	 * @param consumer
+	 *            the consumer data
+	 */
+	@PostMapping("/Enterprise")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public ResponseEntity<String> registerAccount(@RequestBody Enterprise enterprise) {
+
+		RestTemplate rt = new RestTemplate();
+		rt.getMessageConverters().add(new StringHttpMessageConverter());
+		String uri = new String(Constants.Url + "/Enterprise");
+		rt.postForObject(uri, enterprise, Enterprise.class);
+		return new ResponseEntity(HttpStatus.CREATED);
+
 	}
 
 }
