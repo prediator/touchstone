@@ -6,11 +6,15 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 /**
  * A DTO
  */
-public class ValidationConsumer {
+public class Validation {
 
 	private String $class;
 
+	@JsonInclude(Include.NON_NULL)
 	private String consumer;
+
+	@JsonInclude(Include.NON_NULL)
+	private String enterprise;
 
 	@JsonInclude(Include.NON_NULL)
 	private Boolean isEmailValidated;
@@ -20,6 +24,14 @@ public class ValidationConsumer {
 
 	@JsonInclude(Include.NON_NULL)
 	private Boolean isAddressValidated;
+
+	public String getEnterprise() {
+		return enterprise;
+	}
+
+	public void setEnterprise(String enterprise) {
+		this.enterprise = enterprise;
+	}
 
 	public Boolean getIsAddressValidated() {
 		return isAddressValidated;
