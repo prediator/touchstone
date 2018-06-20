@@ -3,7 +3,7 @@ package com.touchstone.service.dto;
 /**
  * A DTO
  */
-public class Enterprise {
+public class EnterpriseDTO {
 
 	private String $class;
 
@@ -20,26 +20,6 @@ public class Enterprise {
 	private Boolean isMobileValidated;
 
 	private Boolean isEmailValidated;
-
-	private String langKey;
-
-	private String password;
-
-	public String getLangKey() {
-		return langKey;
-	}
-
-	public void setLangKey(String langKey) {
-		this.langKey = langKey;
-	}
-
-	public String getPassword() {
-		return password;
-	}
-
-	public void setPassword(String password) {
-		this.password = password;
-	}
 
 	public Address getAddress() {
 		return address;
@@ -107,10 +87,9 @@ public class Enterprise {
 
 	@Override
 	public String toString() {
-		return "Enterprise [$class=" + $class + ", enterpriseName=" + enterpriseName + ", address=" + address
+		return "EnterpriseDTO [$class=" + $class + ", enterpriseName=" + enterpriseName + ", address=" + address
 				+ ", email=" + email + ", userId=" + userId + ", mobile=" + mobile + ", isMobileValidated="
-				+ isMobileValidated + ", isEmailValidated=" + isEmailValidated + ", langKey=" + langKey + ", password="
-				+ password + "]";
+				+ isMobileValidated + ", isEmailValidated=" + isEmailValidated + "]";
 	}
 
 }

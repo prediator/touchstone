@@ -8,7 +8,7 @@ public class Consumer {
 	private String $class;
 
 	private Address address;
-	
+
 	private String firstName;
 
 	private String lastName;
@@ -23,9 +23,29 @@ public class Consumer {
 
 	private String mobile;
 
+	private String langKey;
+
+	private String password;
+
 	private Boolean isMobileValidated;
 
 	private Boolean isEmailValidated;
+
+	public String getLangKey() {
+		return langKey;
+	}
+
+	public void setLangKey(String langKey) {
+		this.langKey = langKey;
+	}
+
+	public String getPassword() {
+		return password;
+	}
+
+	public void setPassword(String password) {
+		this.password = password;
+	}
 
 	public Address getAddress() {
 		return address;
@@ -115,15 +135,12 @@ public class Consumer {
 		this.isEmailValidated = isEmailValidated;
 	}
 
- 
-
 	@Override
 	public String toString() {
-		return "Comsumer [$class=" + $class + ", address=" + address + ", firstName=" + firstName + ", lastName="
+		return "Consumer [$class=" + $class + ", address=" + address + ", firstName=" + firstName + ", lastName="
 				+ lastName + ", email=" + email + ", gender=" + gender + ", dob=" + dob + ", userId=" + userId
-				+ ", mobile=" + mobile + ", isMobileValidated=" + isMobileValidated + ", isEmailValidated="
-				+ isEmailValidated +   ", getClass()=" + getClass() + ", hashCode()=" + hashCode()
-				+ ", toString()=" + super.toString() + "]";
+				+ ", mobile=" + mobile + ", langKey=" + langKey + ", password=" + password + ", isMobileValidated="
+				+ isMobileValidated + ", isEmailValidated=" + isEmailValidated + "]";
 	}
 
 }

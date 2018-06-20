@@ -3,15 +3,21 @@ package com.touchstone.service.dto;
 /**
  * A DTO
  */
-public class Enterprise {
+public class ConsumerDTO {
 
 	private String $class;
 
-	private String enterpriseName;
-
 	private Address address;
 
+	private String firstName;
+
+	private String lastName;
+
 	private String email;
+
+	private String gender;
+
+	private String dob;
 
 	private String userId;
 
@@ -20,26 +26,6 @@ public class Enterprise {
 	private Boolean isMobileValidated;
 
 	private Boolean isEmailValidated;
-
-	private String langKey;
-
-	private String password;
-
-	public String getLangKey() {
-		return langKey;
-	}
-
-	public void setLangKey(String langKey) {
-		this.langKey = langKey;
-	}
-
-	public String getPassword() {
-		return password;
-	}
-
-	public void setPassword(String password) {
-		this.password = password;
-	}
 
 	public Address getAddress() {
 		return address;
@@ -57,12 +43,20 @@ public class Enterprise {
 		this.$class = $class;
 	}
 
-	public String getEnterpriseName() {
-		return enterpriseName;
+	public String getFirstName() {
+		return firstName;
 	}
 
-	public void setEnterpriseName(String enterpriseName) {
-		this.enterpriseName = enterpriseName;
+	public void setFirstName(String firstName) {
+		this.firstName = firstName;
+	}
+
+	public String getLastName() {
+		return lastName;
+	}
+
+	public void setLastName(String lastName) {
+		this.lastName = lastName;
 	}
 
 	public String getEmail() {
@@ -71,6 +65,22 @@ public class Enterprise {
 
 	public void setEmail(String email) {
 		this.email = email;
+	}
+
+	public String getGender() {
+		return gender;
+	}
+
+	public void setGender(String gender) {
+		this.gender = gender;
+	}
+
+	public String getDob() {
+		return dob;
+	}
+
+	public void setDob(String dob) {
+		this.dob = dob;
 	}
 
 	public String getUserId() {
@@ -107,10 +117,10 @@ public class Enterprise {
 
 	@Override
 	public String toString() {
-		return "Enterprise [$class=" + $class + ", enterpriseName=" + enterpriseName + ", address=" + address
-				+ ", email=" + email + ", userId=" + userId + ", mobile=" + mobile + ", isMobileValidated="
-				+ isMobileValidated + ", isEmailValidated=" + isEmailValidated + ", langKey=" + langKey + ", password="
-				+ password + "]";
+		return "ConsumerDTO [$class=" + $class + ", address=" + address + ", firstName=" + firstName + ", lastName="
+				+ lastName + ", email=" + email + ", gender=" + gender + ", dob=" + dob + ", userId=" + userId
+				+ ", mobile=" + mobile + ", isMobileValidated=" + isMobileValidated + ", isEmailValidated="
+				+ isEmailValidated + "]";
 	}
 
 }

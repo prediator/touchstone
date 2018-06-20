@@ -171,6 +171,7 @@ dependencies {
     compile "io.jsonwebtoken:jjwt"
     compile "com.github.mongobee:mongobee"
     compile "com.google.guava:guava"
+    compile group: 'ma.glasnost.orika', name: 'orika-core', version: '1.5.2'
     compile ("io.springfox:springfox-swagger2") {
         exclude module: 'mapstruct'
     }

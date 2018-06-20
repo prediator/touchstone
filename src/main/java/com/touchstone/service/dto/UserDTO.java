@@ -20,7 +20,7 @@ public class UserDTO {
 
 	private String id;
 
-	private String userId = "tdy";
+	private String userId;
 
 	@Size(max = 50)
 	private String firstName;

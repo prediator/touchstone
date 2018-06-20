@@ -1,5 +1,7 @@
 package com.touchstone.web.rest;
 
+import java.util.stream.Collectors;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -14,9 +16,19 @@ import org.springframework.web.client.RestTemplate;
 
 import com.codahale.metrics.annotation.Timed;
 import com.touchstone.config.Constants;
+import com.touchstone.domain.User;
+import com.touchstone.domain.UserType;
+import com.touchstone.service.UserService;
 import com.touchstone.service.dto.Consumer;
+import com.touchstone.service.dto.ConsumerDTO;
 import com.touchstone.service.dto.Enterprise;
+import com.touchstone.service.dto.EnterpriseDTO;
 import com.touchstone.service.dto.Validation;
+import com.touchstone.service.util.RandomUtil;
+
+import ma.glasnost.orika.MapperFacade;
+import ma.glasnost.orika.MapperFactory;
+import ma.glasnost.orika.impl.DefaultMapperFactory;
 
 /**
  * REST controller for managing the current user's account.
@@ -26,6 +38,12 @@ import com.touchstone.service.dto.Validation;
 public class ConsumerResource {
 
 	private final Logger log = LoggerFactory.getLogger(ConsumerResource.class);
+
+	private final UserService userService;
+
+	public ConsumerResource(UserService userService) {
+		this.userService = userService;
+	}
 
 	/**
 	 * POST /register : register Consumer.
@@ -38,10 +56,29 @@ public class ConsumerResource {
 	@ResponseStatus(HttpStatus.CREATED)
 	public ResponseEntity<String> registerAccount(@RequestBody Consumer consumer) {
 
+		User data = new User();
+
+		data.setUserId(RandomUtil.generateActivationKey());
+		data.setEmail(consumer.getEmail());
+		data.setFirstName(consumer.getFirstName());
+		data.setLastName(consumer.getLastName());
+		data.setPassword(consumer.getPassword());
+		data.setUserType(UserType.CONSUMER.name());
+		userService.registerConsumer(data);
+
+		MapperFactory mapperFactory = new DefaultMapperFactory.Builder().build();
+		mapperFactory.classMap(Consumer.class, ConsumerDTO.class);
+		MapperFacade mapper = mapperFactory.getMapperFacade();
+		ConsumerDTO dest = mapper.map(consumer, ConsumerDTO.class);
+
+		dest.setUserId(data.getUserId());
+		dest.set$class("org.touchstone.basic.Consumer");
+		dest.getAddress().set$class("org.touchstone.basic.Address");
+
 		RestTemplate rt = new RestTemplate();
 		rt.getMessageConverters().add(new StringHttpMessageConverter());
 		String uri = new String(Constants.Url + "/Consumer");
-		rt.postForObject(uri, consumer, Consumer.class);
+		rt.postForObject(uri, dest, ConsumerDTO.class);
 		return new ResponseEntity(HttpStatus.CREATED);
 
 	}
@@ -56,11 +93,28 @@ public class ConsumerResource {
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
 	public ResponseEntity<String> registerAccount(@RequestBody Enterprise enterprise) {
+		
+		User data = new User();
 
+		data.setUserId(RandomUtil.generateActivationKey());
+		data.setEmail(enterprise.getEmail());
+		data.setPassword(enterprise.getPassword());
+		data.setUserType(UserType.ENTERPRISE.name());
+		userService.registerConsumer(data);
+
+		MapperFactory mapperFactory = new DefaultMapperFactory.Builder().build();
+		mapperFactory.classMap(Enterprise.class, EnterpriseDTO.class);
+		MapperFacade mapper = mapperFactory.getMapperFacade();
+		EnterpriseDTO dest = mapper.map(enterprise, EnterpriseDTO.class);
+
+		dest.setUserId(data.getUserId());
+		dest.set$class("org.touchstone.basic.Enterprise");
+		dest.getAddress().set$class("org.touchstone.basic.Address");
+		
 		RestTemplate rt = new RestTemplate();
 		rt.getMessageConverters().add(new StringHttpMessageConverter());
 		String uri = new String(Constants.Url + "/Enterprise");
-		rt.postForObject(uri, enterprise, Enterprise.class);
+		rt.postForObject(uri, dest, EnterpriseDTO.class);
 		return new ResponseEntity(HttpStatus.CREATED);
 
 	}
