@@ -1,5 +1,8 @@
 package com.touchstone.web.rest;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -44,9 +47,12 @@ public class ConsumerResource {
 	private final Logger log = LoggerFactory.getLogger(ConsumerResource.class);
 
 	private final UserService userService;
+	
+	private GenerateOTP generateOtp = new GenerateOTP();
 
 	public ConsumerResource(UserService userService) {
 		this.userService = userService;
+		
 	}
 
 	/**
@@ -153,10 +159,8 @@ public class ConsumerResource {
 	@GetMapping("/ValidateMobile")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<String> ValidateMobile(@RequestParam(value = "id") Integer otp,
+	public ResponseEntity<Map<String, String>> ValidateMobile(@RequestParam(value = "id") Integer otp,
 			@RequestParam(value = "phone") String phone) {
-
-		GenerateOTP generateOtp = new GenerateOTP();
 
 		if (generateOtp.checkOTP(phone, otp) == 1) {
 			Validation validPhone = new Validation();
@@ -169,9 +173,13 @@ public class ConsumerResource {
 			rt.postForObject(uri, validPhone, Validation.class);
 
 			generateOtp.removeOtp(phone);
-			return new ResponseEntity<String>(HttpStatus.ACCEPTED);
+			
+			Map<String, String> data = new HashMap<>();
+			
+			data.put("status", "success");
+			return new ResponseEntity<Map<String, String>>(data, HttpStatus.ACCEPTED);
 		} else {
-			return new ResponseEntity<String>(HttpStatus.UNAUTHORIZED);
+			return new ResponseEntity<Map<String, String>>(HttpStatus.UNAUTHORIZED);
 		}
 	}
 
@@ -187,8 +195,6 @@ public class ConsumerResource {
 	public ResponseEntity<String> sentOtp(@RequestBody OtpDto phone) {
 
 		try {
-
-			GenerateOTP generateOtp = new GenerateOTP();
 
 			Unirest.post("http://api.msg91.com/api/v2/sendsms").header("authkey", "221184AdSEVa5f3aK5b28933d")
 					.header("content-type", "application/json")
