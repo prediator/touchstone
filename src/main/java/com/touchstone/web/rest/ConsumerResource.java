@@ -1,20 +1,22 @@
 package com.touchstone.web.rest;
 
-import java.util.stream.Collectors;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.StringHttpMessageConverter;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
 import com.codahale.metrics.annotation.Timed;
+import com.mashape.unirest.http.Unirest;
+import com.mashape.unirest.http.exceptions.UnirestException;
 import com.touchstone.config.Constants;
 import com.touchstone.domain.User;
 import com.touchstone.domain.UserType;
@@ -23,8 +25,10 @@ import com.touchstone.service.dto.Consumer;
 import com.touchstone.service.dto.ConsumerDTO;
 import com.touchstone.service.dto.Enterprise;
 import com.touchstone.service.dto.EnterpriseDTO;
+import com.touchstone.service.dto.OtpDto;
 import com.touchstone.service.dto.Validation;
 import com.touchstone.service.util.RandomUtil;
+import com.touchstone.web.rest.util.GenerateOTP;
 
 import ma.glasnost.orika.MapperFacade;
 import ma.glasnost.orika.MapperFactory;
@@ -93,7 +97,7 @@ public class ConsumerResource {
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
 	public ResponseEntity<String> registerAccount(@RequestBody Enterprise enterprise) {
-		
+
 		User data = new User();
 
 		data.setUserId(RandomUtil.generateActivationKey());
@@ -110,7 +114,7 @@ public class ConsumerResource {
 		dest.setUserId(data.getUserId());
 		dest.set$class("org.touchstone.basic.Enterprise");
 		dest.getAddress().set$class("org.touchstone.basic.Address");
-		
+
 		RestTemplate rt = new RestTemplate();
 		rt.getMessageConverters().add(new StringHttpMessageConverter());
 		String uri = new String(Constants.Url + "/Enterprise");
@@ -144,23 +148,65 @@ public class ConsumerResource {
 	 * @param phone
 	 *            the phone data
 	 */
-	@PostMapping("/ValidateMobile")
+	@GetMapping("/ValidateMobile")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<Validation> ValidateMobile(@RequestBody Validation phone) {
+	public ResponseEntity<String> ValidateMobile(@RequestParam(value = "id") Integer otp,
+			@RequestParam(value = "phone") String phone) {
 
-		RestTemplate rt = new RestTemplate();
-		rt.getMessageConverters().add(new StringHttpMessageConverter());
-		String uri = new String(Constants.Url + "/ValidateMobile");
-		Validation response = rt.postForObject(uri, phone, Validation.class);
-		return new ResponseEntity<Validation>(response, HttpStatus.CREATED);
+		GenerateOTP generateOtp = new GenerateOTP();
+
+		if (generateOtp.checkOTP(phone, otp) == 1) {
+			Validation validPhone = new Validation();
+			validPhone.set$class("org.touchstone.basic.ValidateMobile");
+			validPhone.setIsMobileValidated(true);
+
+			RestTemplate rt = new RestTemplate();
+			rt.getMessageConverters().add(new StringHttpMessageConverter());
+			String uri = new String(Constants.Url + "/ValidateMobile");
+			rt.postForObject(uri, validPhone, Validation.class);
+
+			generateOtp.removeOtp(phone);
+			return new ResponseEntity<String>(HttpStatus.ACCEPTED);
+		} else {
+			return new ResponseEntity<String>(HttpStatus.UNAUTHORIZED);
+		}
+	}
+
+	/**
+	 * POST /sentOtp : phone validation
+	 *
+	 * @param phone
+	 *            the phone data
+	 */
+	@PostMapping("/sentOtp")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public ResponseEntity<String> sentOtp(@RequestBody OtpDto phone) {
+
+		try {
+
+			GenerateOTP generateOtp = new GenerateOTP();
+
+			Unirest.post("http://api.msg91.com/api/v2/sendsms").header("authkey", "221184AdSEVa5f3aK5b28933d")
+					.header("content-type", "application/json")
+					.body("{ \"sender\": \"SOCKET\", \"route\": \"4\", \"country\": \"" + phone.getCountryCode()
+							+ "\", \"sms\": [ { \"message\": \"" + phone.getMessage() + " - OTP "
+							+ generateOtp.storeOTP(phone.getNumber()) + "\", \"to\": [ \"" + phone.getNumber()
+							+ "\" ] }] }")
+					.asString();
+
+		} catch (UnirestException e) {
+
+		}
+		return new ResponseEntity<String>(HttpStatus.CREATED);
 
 	}
 
 	/**
-	 * POST /ValidateMobile : phone validation
+	 * POST /ValidateAddress : Address validation
 	 *
-	 * @param phone
+	 * @param address
 	 *            the phone data
 	 */
 	@PostMapping("/ValidateAddress")
