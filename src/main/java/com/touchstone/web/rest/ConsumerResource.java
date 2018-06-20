@@ -143,10 +143,12 @@ public class ConsumerResource {
 	}
 
 	/**
-	 * POST /ValidateMobile : phone validation
+	 * POST /ValidateMobile : to validate otp
 	 *
 	 * @param phone
-	 *            the phone data
+	 *            the phone number
+	 * @param id
+	 *            the otp            
 	 */
 	@GetMapping("/ValidateMobile")
 	@Timed
@@ -174,7 +176,7 @@ public class ConsumerResource {
 	}
 
 	/**
-	 * POST /sentOtp : phone validation
+	 * POST /sentOtp : to sent otp
 	 *
 	 * @param phone
 	 *            the phone data
