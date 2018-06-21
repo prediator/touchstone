@@ -64,12 +64,18 @@ public class UserDTO {
 	}
 
 	public UserDTO(User user) {
-		this.id = user.getUserId();
 		this.userId = user.getLogin();
 		this.firstName = user.getFirstName();
 		this.lastName = user.getLastName();
 		this.emailId = user.getEmail();
 		this.activated = user.getActivated();
+		this.langKey = user.getLangKey();
+		if (user.getUserType().equalsIgnoreCase("consumer")) {
+			this.userType = userType.CONSUMER;
+		} else {
+			this.userType = userType.ENTERPRISE;
+		}
+
 		this.authorities = user.getAuthorities().stream().map(Authority::getName).collect(Collectors.toSet());
 	}
 

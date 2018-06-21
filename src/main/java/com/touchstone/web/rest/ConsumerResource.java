@@ -234,4 +234,52 @@ public class ConsumerResource {
 
 	}
 
+	/**
+	 * POST /Consumer/{userid} : To get Consumer
+	 *
+	 * @param userid
+	 *            the user id
+	 */
+	@GetMapping("/Consumer/{userid}")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public ResponseEntity<Consumer> getConsumer(@RequestParam(value = "userid") String userid) {
+
+		if (userid != null) {
+
+			RestTemplate rt = new RestTemplate();
+			rt.getMessageConverters().add(new StringHttpMessageConverter());
+			String uri = new String(Constants.Url + "/Consumer?id=" + userid);
+			Consumer data = rt.getForObject(uri, Consumer.class);
+
+			return new ResponseEntity<Consumer>(data, HttpStatus.ACCEPTED);
+		} else {
+			return new ResponseEntity<Consumer>(HttpStatus.UNAUTHORIZED);
+		}
+	}
+
+	/**
+	 * POST /Enterprise/{userid} : To get Enterprise
+	 *
+	 * @param userid
+	 *            the id
+	 */
+	@GetMapping("/Enterprise/{userid}")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public ResponseEntity<Enterprise> getEnterprise(@RequestParam(value = "userid") String userid) {
+
+		if (userid != null) {
+
+			RestTemplate rt = new RestTemplate();
+			rt.getMessageConverters().add(new StringHttpMessageConverter());
+			String uri = new String(Constants.Url + "/Consumer?id=" + userid);
+			Enterprise data = rt.getForObject(uri, Enterprise.class);
+
+			return new ResponseEntity<Enterprise>(data, HttpStatus.ACCEPTED);
+		} else {
+			return new ResponseEntity<Enterprise>(HttpStatus.UNAUTHORIZED);
+		}
+	}
+
 }

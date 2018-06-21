@@ -104,6 +104,8 @@ public class UserService {
         newUser.setFirstName(userDTO.getFirstName());
         newUser.setLastName(userDTO.getLastName());
         newUser.setEmail(userDTO.getEmailId());
+        newUser.setLangKey(userDTO.getLangKey());
+        newUser.setUserType(userDTO.getUserType().name());
         // new user is not active
         newUser.setActivated(true);
         // new user gets registration key

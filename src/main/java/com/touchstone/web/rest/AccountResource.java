@@ -12,6 +12,8 @@ import com.touchstone.web.rest.errors.*;
 import com.touchstone.web.rest.vm.KeyAndPasswordVM;
 import com.touchstone.web.rest.vm.ManagedUserVM;
 
+import ch.qos.logback.core.net.SyslogOutputStream;
+
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -102,6 +104,7 @@ public class AccountResource {
     @GetMapping("/account")
     @Timed
     public UserDTO getAccount() {
+    	System.out.println(userService.getUserWithAuthorities().map(UserDTO::new));
         return userService.getUserWithAuthorities()
             .map(UserDTO::new)
             .orElseThrow(() -> new InternalServerErrorException("User could not be found"));
