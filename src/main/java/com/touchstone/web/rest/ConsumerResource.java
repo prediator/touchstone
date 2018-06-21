@@ -47,12 +47,12 @@ public class ConsumerResource {
 	private final Logger log = LoggerFactory.getLogger(ConsumerResource.class);
 
 	private final UserService userService;
-	
+
 	private GenerateOTP generateOtp = new GenerateOTP();
 
 	public ConsumerResource(UserService userService) {
 		this.userService = userService;
-		
+
 	}
 
 	/**
@@ -154,7 +154,7 @@ public class ConsumerResource {
 	 * @param phone
 	 *            the phone number
 	 * @param id
-	 *            the otp            
+	 *            the otp
 	 */
 	@GetMapping("/ValidateMobile")
 	@Timed
@@ -173,9 +173,9 @@ public class ConsumerResource {
 			rt.postForObject(uri, validPhone, Validation.class);
 
 			generateOtp.removeOtp(phone);
-			
+
 			Map<String, String> data = new HashMap<>();
-			
+
 			data.put("status", "success");
 			return new ResponseEntity<Map<String, String>>(data, HttpStatus.ACCEPTED);
 		} else {
@@ -192,7 +192,9 @@ public class ConsumerResource {
 	@PostMapping("/sentOtp")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<String> sentOtp(@RequestBody OtpDto phone) {
+	public ResponseEntity<Map<String, String>> sentOtp(@RequestBody OtpDto phone) {
+
+		Map<String, String> data = new HashMap<>();
 
 		try {
 
@@ -203,11 +205,13 @@ public class ConsumerResource {
 							+ generateOtp.storeOTP(phone.getNumber()) + "\", \"to\": [ \"" + phone.getNumber()
 							+ "\" ] }] }")
 					.asString();
-
+			data.put("status", "success");
 		} catch (UnirestException e) {
+			data.put("status", "error");
+			return new ResponseEntity<Map<String, String>>(HttpStatus.BAD_REQUEST);
 
 		}
-		return new ResponseEntity<String>(HttpStatus.CREATED);
+		return new ResponseEntity<Map<String, String>>(HttpStatus.CREATED);
 
 	}
 
