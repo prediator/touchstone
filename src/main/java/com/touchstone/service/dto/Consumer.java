@@ -23,21 +23,11 @@ public class Consumer {
 
 	private String mobile;
 
-	private String langKey;
-
 	private String password;
 
 	private Boolean isMobileValidated;
 
 	private Boolean isEmailValidated;
-
-	public String getLangKey() {
-		return langKey;
-	}
-
-	public void setLangKey(String langKey) {
-		this.langKey = langKey;
-	}
 
 	public String getPassword() {
 		return password;
@@ -139,8 +129,9 @@ public class Consumer {
 	public String toString() {
 		return "Consumer [$class=" + $class + ", address=" + address + ", firstName=" + firstName + ", lastName="
 				+ lastName + ", email=" + email + ", gender=" + gender + ", dob=" + dob + ", userId=" + userId
-				+ ", mobile=" + mobile + ", langKey=" + langKey + ", password=" + password + ", isMobileValidated="
-				+ isMobileValidated + ", isEmailValidated=" + isEmailValidated + "]";
+				+ ", mobile=" + mobile + ", password=" + password + ", isMobileValidated=" + isMobileValidated
+				+ ", isEmailValidated=" + isEmailValidated + ", getClass()=" + getClass() + ", hashCode()=" + hashCode()
+				+ ", toString()=" + super.toString() + "]";
 	}
 
 }

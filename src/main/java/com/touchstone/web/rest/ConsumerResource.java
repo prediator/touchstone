@@ -1,6 +1,8 @@
 package com.touchstone.web.rest;
 
+import java.net.URLEncoder;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -9,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.HtmlUtils;
 
 import com.codahale.metrics.annotation.Timed;
 import com.mashape.unirest.http.Unirest;
@@ -243,18 +247,40 @@ public class ConsumerResource {
 	@GetMapping("/Consumer/{userid}")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<Consumer> getConsumer(@RequestParam(value = "userid") String userid) {
+	public ResponseEntity<List<Consumer>> getConsumer(@PathVariable String userid) {
 
 		if (userid != null) {
 
 			RestTemplate rt = new RestTemplate();
 			rt.getMessageConverters().add(new StringHttpMessageConverter());
-			String uri = new String(Constants.Url + "/Consumer?id=" + userid);
-			Consumer data = rt.getForObject(uri, Consumer.class);
+			String uri = new String(Constants.Url + "/queries/selectConsumerByUserId?userId=" + userid);
+			List<Consumer> data = rt.getForObject(uri, List.class);
 
-			return new ResponseEntity<Consumer>(data, HttpStatus.ACCEPTED);
+			return new ResponseEntity<List<Consumer>>(data, HttpStatus.ACCEPTED);
 		} else {
-			return new ResponseEntity<Consumer>(HttpStatus.UNAUTHORIZED);
+			return new ResponseEntity<List<Consumer>>(HttpStatus.UNAUTHORIZED);
+		}
+	}
+
+	/**
+	 * POST /Consumer/email/{email} : To get Consumer by Email
+	 *
+	 * @param email
+	 *            the user email
+	 */
+	@GetMapping("/Consumer/email/{email:.+}")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public ResponseEntity<List<Consumer>> getConsumerByEmail(@PathVariable String email) {
+		if (email != null) {
+			RestTemplate rt = new RestTemplate();
+			rt.getMessageConverters().add(new StringHttpMessageConverter());
+			String uri = new String(Constants.Url + "/queries/selectConsumerByEmail?email=" + email);
+			List<Consumer> data = rt.getForObject(uri, List.class);
+
+			return new ResponseEntity<List<Consumer>>(data, HttpStatus.ACCEPTED);
+		} else {
+			return new ResponseEntity<List<Consumer>>(HttpStatus.UNAUTHORIZED);
 		}
 	}
 
@@ -267,18 +293,40 @@ public class ConsumerResource {
 	@GetMapping("/Enterprise/{userid}")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<Enterprise> getEnterprise(@RequestParam(value = "userid") String userid) {
+	public ResponseEntity<List<Enterprise>> getEnterprise(@RequestParam(value = "userid") String userid) {
 
 		if (userid != null) {
 
 			RestTemplate rt = new RestTemplate();
 			rt.getMessageConverters().add(new StringHttpMessageConverter());
-			String uri = new String(Constants.Url + "/Consumer?id=" + userid);
-			Enterprise data = rt.getForObject(uri, Enterprise.class);
+			String uri = new String(Constants.Url + "/queries/selectEnterpriseByUserId?id=" + userid);
+			List<Enterprise> data = rt.getForObject(uri, List.class);
 
-			return new ResponseEntity<Enterprise>(data, HttpStatus.ACCEPTED);
+			return new ResponseEntity<List<Enterprise>>(data, HttpStatus.ACCEPTED);
 		} else {
-			return new ResponseEntity<Enterprise>(HttpStatus.UNAUTHORIZED);
+			return new ResponseEntity<List<Enterprise>>(HttpStatus.UNAUTHORIZED);
+		}
+	}
+	
+	/**
+	 * POST /Enterprise/email/{email} : To get Enterprise by Email
+	 *
+	 * @param email
+	 *            the user email
+	 */
+	@GetMapping("/Enterprise/email/{email:.+}")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public ResponseEntity<List<Enterprise>> getEnterpriseByEmail(@PathVariable String email) {
+		if (email != null) {
+			RestTemplate rt = new RestTemplate();
+			rt.getMessageConverters().add(new StringHttpMessageConverter());
+			String uri = new String(Constants.Url + "/queries/selectEnterPriseByEmail?email=" + email);
+			List<Enterprise> data = rt.getForObject(uri, List.class);
+
+			return new ResponseEntity<List<Enterprise>>(data, HttpStatus.ACCEPTED);
+		} else {
+			return new ResponseEntity<List<Enterprise>>(HttpStatus.UNAUTHORIZED);
 		}
 	}
 

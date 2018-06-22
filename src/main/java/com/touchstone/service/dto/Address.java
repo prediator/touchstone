@@ -1,7 +1,5 @@
 package com.touchstone.service.dto;
 
-import com.touchstone.domain.Gender;
-
 /**
  * A DTO
  */
@@ -12,7 +10,7 @@ public class Address {
 	private String address2;
 	private String city;
 	private String state;
-	private int zipcode;
+	private long zipcode;
 	private String country;
 	private Boolean isAddressValidated;
 
@@ -56,11 +54,11 @@ public class Address {
 		this.state = state;
 	}
 
-	public int getZipcode() {
+	public long getZipcode() {
 		return zipcode;
 	}
 
-	public void setZipcode(int zipcode) {
+	public void setZipcode(long zipcode) {
 		this.zipcode = zipcode;
 	}
 
