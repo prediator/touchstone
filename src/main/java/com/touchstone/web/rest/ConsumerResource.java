@@ -237,6 +237,25 @@ public class ConsumerResource {
 		return new ResponseEntity<Validation>(response, HttpStatus.CREATED);
 
 	}
+	
+	/**
+	 * POST /ValidateAddress : Address validation
+	 *
+	 * @param address
+	 *            the phone data
+	 */
+	@PostMapping("/ValidatEmail")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public ResponseEntity<Validation> ValidatEmail(@RequestBody Validation address) {
+
+		RestTemplate rt = new RestTemplate();
+		rt.getMessageConverters().add(new StringHttpMessageConverter());
+		String uri = new String(Constants.Url + "/ValidatEmail");
+		Validation response = rt.postForObject(uri, address, Validation.class);
+		return new ResponseEntity<Validation>(response, HttpStatus.CREATED);
+
+	}
 
 	/**
 	 * POST /Consumer/{userid} : To get Consumer
@@ -321,7 +340,7 @@ public class ConsumerResource {
 		if (email != null) {
 			RestTemplate rt = new RestTemplate();
 			rt.getMessageConverters().add(new StringHttpMessageConverter());
-			String uri = new String(Constants.Url + "/queries/selectEnterPriseByEmail?email=" + email);
+			String uri = new String(Constants.Url + "/queries/selectEnterpriseByEmail?email=" + email);
 			List<Enterprise> data = rt.getForObject(uri, List.class);
 
 			return new ResponseEntity<List<Enterprise>>(data, HttpStatus.ACCEPTED);
