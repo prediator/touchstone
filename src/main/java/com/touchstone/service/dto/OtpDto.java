@@ -4,8 +4,6 @@ public class OtpDto {
 
 	String number;
 
-	String message;
-
 	String countryCode;
 
 	public String getNumber() {
@@ -14,14 +12,6 @@ public class OtpDto {
 
 	public void setNumber(String number) {
 		this.number = number;
-	}
-
-	public String getMessage() {
-		return message;
-	}
-
-	public void setMessage(String message) {
-		this.message = message;
 	}
 
 	public String getCountryCode() {
@@ -34,7 +24,7 @@ public class OtpDto {
 
 	@Override
 	public String toString() {
-		return "OtpDto [number=" + number + ", message=" + message + ", countryCode=" + countryCode + "]";
+		return "OtpDto [number=" + number + ", countryCode=" + countryCode + "]";
 	}
 
 }

@@ -25,9 +25,19 @@ public class Consumer {
 
 	private String password;
 
+	private String langKey;
+
 	private Boolean isMobileValidated;
 
 	private Boolean isEmailValidated;
+
+	public String getLangKey() {
+		return langKey;
+	}
+
+	public void setLangKey(String langKey) {
+		this.langKey = langKey;
+	}
 
 	public String getPassword() {
 		return password;

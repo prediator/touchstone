@@ -1,6 +1,5 @@
 package com.touchstone.web.rest;
 
-import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,7 +18,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.HtmlUtils;
 
 import com.codahale.metrics.annotation.Timed;
 import com.mashape.unirest.http.Unirest;
@@ -33,6 +31,7 @@ import com.touchstone.service.dto.ConsumerDTO;
 import com.touchstone.service.dto.Enterprise;
 import com.touchstone.service.dto.EnterpriseDTO;
 import com.touchstone.service.dto.OtpDto;
+import com.touchstone.service.dto.Update;
 import com.touchstone.service.dto.Validation;
 import com.touchstone.service.util.RandomUtil;
 import com.touchstone.web.rest.util.GenerateOTP;
@@ -78,6 +77,7 @@ public class ConsumerResource {
 		data.setLastName(consumer.getLastName());
 		data.setPassword(consumer.getPassword());
 		data.setUserType(UserType.CONSUMER.name());
+		data.setLangKey(consumer.getLangKey());
 		userService.registerConsumer(data);
 
 		MapperFactory mapperFactory = new DefaultMapperFactory.Builder().build();
@@ -114,6 +114,7 @@ public class ConsumerResource {
 		data.setEmail(enterprise.getEmail());
 		data.setPassword(enterprise.getPassword());
 		data.setUserType(UserType.ENTERPRISE.name());
+		data.setLangKey(enterprise.getLangKey());
 		userService.registerConsumer(data);
 
 		MapperFactory mapperFactory = new DefaultMapperFactory.Builder().build();
@@ -160,16 +161,17 @@ public class ConsumerResource {
 	 * @param id
 	 *            the otp
 	 */
-	@GetMapping("/ValidateMobile")
+	@GetMapping("/ValidateMobile/{id}/{phone}/{user}")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<Map<String, String>> ValidateMobile(@RequestParam(value = "id") Integer otp,
-			@RequestParam(value = "phone") String phone) {
+	public ResponseEntity<Map<String, String>> ValidateMobile(@PathVariable Integer id, @PathVariable String phone,
+			@PathVariable String user) {
 
-		if (generateOtp.checkOTP(phone, otp) == 1) {
+		if (generateOtp.checkOTP(phone, id) == 1) {
 			Validation validPhone = new Validation();
 			validPhone.set$class("org.touchstone.basic.ValidateMobile");
 			validPhone.setIsMobileValidated(true);
+			validPhone.setConsumer("resource:org.touchstone.basic.Consumer#" + user);
 
 			RestTemplate rt = new RestTemplate();
 			rt.getMessageConverters().add(new StringHttpMessageConverter());
@@ -193,21 +195,18 @@ public class ConsumerResource {
 	 * @param phone
 	 *            the phone data
 	 */
-	@PostMapping("/sentOtp")
+	@GetMapping("/sentOtp/{phone}")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<Map<String, String>> sentOtp(@RequestBody OtpDto phone) {
+	public ResponseEntity<Map<String, String>> sentOtp(@PathVariable String phone) {
 
 		Map<String, String> data = new HashMap<>();
 
 		try {
-
 			Unirest.post("http://api.msg91.com/api/v2/sendsms").header("authkey", "221184AdSEVa5f3aK5b28933d")
 					.header("content-type", "application/json")
-					.body("{ \"sender\": \"SOCKET\", \"route\": \"4\", \"country\": \"" + phone.getCountryCode()
-							+ "\", \"sms\": [ { \"message\": \"" + phone.getMessage() + " - OTP "
-							+ generateOtp.storeOTP(phone.getNumber()) + "\", \"to\": [ \"" + phone.getNumber()
-							+ "\" ] }] }")
+					.body("{ \"sender\": \"SOCKET\", \"route\": \"4\", \"country\": \"91\", \"sms\": [ { \"message\": \" OTP "
+							+ generateOtp.storeOTP(phone) + "\", \"to\": [ \"" + phone + "\" ] }] }")
 					.asString();
 			data.put("status", "success");
 		} catch (UnirestException e) {
@@ -237,24 +236,78 @@ public class ConsumerResource {
 		return new ResponseEntity<Validation>(response, HttpStatus.CREATED);
 
 	}
-	
+
+	/**
+	 * POST /UpdateMobile : Address validation
+	 *
+	 * @param address
+	 *            the phone data
+	 */
+	@PostMapping("/UpdateMobile")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public ResponseEntity<Validation> UpdateMobile(@RequestBody Update update) {
+
+		RestTemplate rt = new RestTemplate();
+		rt.getMessageConverters().add(new StringHttpMessageConverter());
+		String uri = new String(Constants.Url + "/UpdateMobile");
+		Validation response = rt.postForObject(uri, update, Validation.class);
+		return new ResponseEntity<Validation>(response, HttpStatus.CREATED);
+
+	}
+
 	/**
 	 * POST /ValidateAddress : Address validation
 	 *
 	 * @param address
 	 *            the phone data
 	 */
-	@PostMapping("/ValidatEmail")
+	@PostMapping("/UpdateAddress")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<Validation> ValidatEmail(@RequestBody Validation address) {
+	public ResponseEntity<Validation> UpdateAddress(@RequestBody Update update) {
 
 		RestTemplate rt = new RestTemplate();
 		rt.getMessageConverters().add(new StringHttpMessageConverter());
-		String uri = new String(Constants.Url + "/ValidatEmail");
-		Validation response = rt.postForObject(uri, address, Validation.class);
+		String uri = new String(Constants.Url + "/UpdateAddress");
+		Validation response = rt.postForObject(uri, update, Validation.class);
 		return new ResponseEntity<Validation>(response, HttpStatus.CREATED);
+	}
 
+	/**
+	 * POST /UpdateEmail : Address validation
+	 *
+	 * @param address
+	 *            the phone data
+	 */
+	@PostMapping("/UpdateEmail")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public ResponseEntity<Validation> UpdateEmail(@RequestBody Update update) {
+
+		RestTemplate rt = new RestTemplate();
+		rt.getMessageConverters().add(new StringHttpMessageConverter());
+		String uri = new String(Constants.Url + "/UpdateEmail");
+		Validation response = rt.postForObject(uri, update, Validation.class);
+		return new ResponseEntity<Validation>(response, HttpStatus.CREATED);
+	}
+
+	/**
+	 * POST /UpdateName : Address validation
+	 *
+	 * @param address
+	 *            the phone data
+	 */
+	@PostMapping("/UpdateName")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public ResponseEntity<Validation> UpdateName(@RequestBody Update update) {
+
+		RestTemplate rt = new RestTemplate();
+		rt.getMessageConverters().add(new StringHttpMessageConverter());
+		String uri = new String(Constants.Url + "/UpdateName");
+		Validation response = rt.postForObject(uri, update, Validation.class);
+		return new ResponseEntity<Validation>(response, HttpStatus.CREATED);
 	}
 
 	/**
@@ -326,7 +379,7 @@ public class ConsumerResource {
 			return new ResponseEntity<List<Enterprise>>(HttpStatus.UNAUTHORIZED);
 		}
 	}
-	
+
 	/**
 	 * POST /Enterprise/email/{email} : To get Enterprise by Email
 	 *

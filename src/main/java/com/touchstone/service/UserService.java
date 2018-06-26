@@ -130,6 +130,7 @@ public class UserService {
         newUser.setFirstName(newUser.getFirstName());
         newUser.setLastName(newUser.getLastName());
         newUser.setEmail(newUser.getEmail());
+        newUser.setLangKey(newUser.getLangKey());
         // new user is not active
         newUser.setActivated(true);
         // new user gets registration key
