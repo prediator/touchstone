@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
@@ -25,12 +24,12 @@ import com.mashape.unirest.http.exceptions.UnirestException;
 import com.touchstone.config.Constants;
 import com.touchstone.domain.User;
 import com.touchstone.domain.UserType;
+import com.touchstone.service.MailService;
 import com.touchstone.service.UserService;
 import com.touchstone.service.dto.Consumer;
 import com.touchstone.service.dto.ConsumerDTO;
 import com.touchstone.service.dto.Enterprise;
 import com.touchstone.service.dto.EnterpriseDTO;
-import com.touchstone.service.dto.OtpDto;
 import com.touchstone.service.dto.Update;
 import com.touchstone.service.dto.Validation;
 import com.touchstone.service.util.RandomUtil;
@@ -51,11 +50,13 @@ public class ConsumerResource {
 
 	private final UserService userService;
 
+	private final MailService mailService;
+
 	private GenerateOTP generateOtp = new GenerateOTP();
 
-	public ConsumerResource(UserService userService) {
+	public ConsumerResource(UserService userService, MailService mailService) {
 		this.userService = userService;
-
+		this.mailService = mailService;
 	}
 
 	/**
@@ -72,7 +73,7 @@ public class ConsumerResource {
 		User data = new User();
 
 		data.setUserId(RandomUtil.generateActivationKey());
-		data.setEmail(consumer.getEmail());
+		data.setEmail(consumer.getEmail().toLowerCase());
 		data.setFirstName(consumer.getFirstName());
 		data.setLastName(consumer.getLastName());
 		data.setPassword(consumer.getPassword());
@@ -93,8 +94,56 @@ public class ConsumerResource {
 		rt.getMessageConverters().add(new StringHttpMessageConverter());
 		String uri = new String(Constants.Url + "/Consumer");
 		rt.postForObject(uri, dest, ConsumerDTO.class);
+		mailService.sendEmail(
+				data.getEmail(), "Account Created", "http://ridgelift.io:8080/api/verifyc/"
+						+ generateOtp.storeOTP(data.getUserId()) + "/" + data.getEmail() + "/" + data.getUserId(),
+				false, true);
 		return new ResponseEntity(HttpStatus.CREATED);
 
+	}
+
+	@GetMapping("/verifyc/{code}/{id:.+}/{uid}")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public String validedEmail(@PathVariable int code, @PathVariable String id, @PathVariable String uid) {
+
+		if (generateOtp.checkOTP(id, code) == 1) {
+			Validation valid = new Validation();
+			valid.set$class("org.touchstone.basic.ValidateEmail");
+			valid.setIsEmailValidated(true);
+			valid.setConsumer("resource:org.touchstone.basic.Consumer#" + uid);
+			RestTemplate rt = new RestTemplate();
+			rt.getMessageConverters().add(new StringHttpMessageConverter());
+			String uri = new String(Constants.Url + "/ValidateEmail");
+			rt.postForObject(uri, valid, Validation.class);
+
+			generateOtp.removeOtp(id);
+			return "Success";
+		}
+
+		return "Failure";
+	}
+
+	@GetMapping("/verifye/{code}/{id:.+}/{uid}")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public String validedEmailEnterprise(@PathVariable int code, @PathVariable String id, @PathVariable String uid) {
+
+		if (generateOtp.checkOTP(id, code) == 1) {
+			Validation valid = new Validation();
+			valid.set$class("org.touchstone.basic.ValidateEmail");
+			valid.setIsEmailValidated(true);
+			valid.setConsumer("resource:org.touchstone.basic.Consumer#" + uid);
+			RestTemplate rt = new RestTemplate();
+			rt.getMessageConverters().add(new StringHttpMessageConverter());
+			String uri = new String(Constants.Url + "/ValidateEmail");
+			rt.postForObject(uri, valid, Validation.class);
+
+			generateOtp.removeOtp(id);
+			return "Success";
+		}
+
+		return "Failure";
 	}
 
 	/**
@@ -111,7 +160,7 @@ public class ConsumerResource {
 		User data = new User();
 
 		data.setUserId(RandomUtil.generateActivationKey());
-		data.setEmail(enterprise.getEmail());
+		data.setEmail(enterprise.getEmail().toLowerCase());
 		data.setPassword(enterprise.getPassword());
 		data.setUserType(UserType.ENTERPRISE.name());
 		data.setLangKey(enterprise.getLangKey());
@@ -130,6 +179,10 @@ public class ConsumerResource {
 		rt.getMessageConverters().add(new StringHttpMessageConverter());
 		String uri = new String(Constants.Url + "/Enterprise");
 		rt.postForObject(uri, dest, EnterpriseDTO.class);
+		mailService.sendEmail(
+				data.getEmail(), "Account Created", "http://ridgelift.io:8080/api/verifye/"
+						+ generateOtp.storeOTP(data.getUserId()) + "/" + data.getEmail() + "/" + data.getUserId(),
+				false, true);
 		return new ResponseEntity(HttpStatus.CREATED);
 
 	}
@@ -177,11 +230,9 @@ public class ConsumerResource {
 			rt.getMessageConverters().add(new StringHttpMessageConverter());
 			String uri = new String(Constants.Url + "/ValidateMobile");
 			rt.postForObject(uri, validPhone, Validation.class);
-
 			generateOtp.removeOtp(phone);
 
 			Map<String, String> data = new HashMap<>();
-
 			data.put("status", "success");
 			return new ResponseEntity<Map<String, String>>(data, HttpStatus.ACCEPTED);
 		} else {
@@ -246,13 +297,13 @@ public class ConsumerResource {
 	@PostMapping("/UpdateMobile")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<Validation> UpdateMobile(@RequestBody Update update) {
+	public ResponseEntity<Update> UpdateMobile(@RequestBody Update update) {
 
 		RestTemplate rt = new RestTemplate();
 		rt.getMessageConverters().add(new StringHttpMessageConverter());
 		String uri = new String(Constants.Url + "/UpdateMobile");
-		Validation response = rt.postForObject(uri, update, Validation.class);
-		return new ResponseEntity<Validation>(response, HttpStatus.CREATED);
+		Update response = rt.postForObject(uri, update, Update.class);
+		return new ResponseEntity<Update>(response, HttpStatus.CREATED);
 
 	}
 
@@ -265,13 +316,13 @@ public class ConsumerResource {
 	@PostMapping("/UpdateAddress")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<Validation> UpdateAddress(@RequestBody Update update) {
+	public ResponseEntity<Update> UpdateAddress(@RequestBody Update update) {
 
 		RestTemplate rt = new RestTemplate();
 		rt.getMessageConverters().add(new StringHttpMessageConverter());
 		String uri = new String(Constants.Url + "/UpdateAddress");
-		Validation response = rt.postForObject(uri, update, Validation.class);
-		return new ResponseEntity<Validation>(response, HttpStatus.CREATED);
+		Update response = rt.postForObject(uri, update, Update.class);
+		return new ResponseEntity<Update>(response, HttpStatus.CREATED);
 	}
 
 	/**
@@ -283,13 +334,13 @@ public class ConsumerResource {
 	@PostMapping("/UpdateEmail")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<Validation> UpdateEmail(@RequestBody Update update) {
+	public ResponseEntity<Update> UpdateEmail(@RequestBody Update update) {
 
 		RestTemplate rt = new RestTemplate();
 		rt.getMessageConverters().add(new StringHttpMessageConverter());
 		String uri = new String(Constants.Url + "/UpdateEmail");
-		Validation response = rt.postForObject(uri, update, Validation.class);
-		return new ResponseEntity<Validation>(response, HttpStatus.CREATED);
+		Update response = rt.postForObject(uri, update, Update.class);
+		return new ResponseEntity<Update>(response, HttpStatus.CREATED);
 	}
 
 	/**
@@ -301,13 +352,13 @@ public class ConsumerResource {
 	@PostMapping("/UpdateName")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<Validation> UpdateName(@RequestBody Update update) {
+	public ResponseEntity<Update> UpdateName(@RequestBody Update update) {
 
 		RestTemplate rt = new RestTemplate();
 		rt.getMessageConverters().add(new StringHttpMessageConverter());
 		String uri = new String(Constants.Url + "/UpdateName");
-		Validation response = rt.postForObject(uri, update, Validation.class);
-		return new ResponseEntity<Validation>(response, HttpStatus.CREATED);
+		Update response = rt.postForObject(uri, update, Update.class);
+		return new ResponseEntity<Update>(response, HttpStatus.CREATED);
 	}
 
 	/**
@@ -332,6 +383,14 @@ public class ConsumerResource {
 		} else {
 			return new ResponseEntity<List<Consumer>>(HttpStatus.UNAUTHORIZED);
 		}
+	}
+
+	@GetMapping("/testing")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public void test() {
+		mailService.sendEmail("my3d3d@gmail.com", "Account Created", "http://ridgelift.io:8080/api/validedEmail/"
+				+ generateOtp.storeOTP("my3d3d@gmail.com") + "/" + "my3d3d@gmail.com", false, true);
 	}
 
 	/**
@@ -365,13 +424,13 @@ public class ConsumerResource {
 	@GetMapping("/Enterprise/{userid}")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<List<Enterprise>> getEnterprise(@RequestParam(value = "userid") String userid) {
+	public ResponseEntity<List<Enterprise>> getEnterprise(@PathVariable(value = "userid") String userid) {
 
 		if (userid != null) {
 
 			RestTemplate rt = new RestTemplate();
 			rt.getMessageConverters().add(new StringHttpMessageConverter());
-			String uri = new String(Constants.Url + "/queries/selectEnterpriseByUserId?id=" + userid);
+			String uri = new String(Constants.Url + "/queries/selectEnterpriseByUserId?userId=" + userid);
 			List<Enterprise> data = rt.getForObject(uri, List.class);
 
 			return new ResponseEntity<List<Enterprise>>(data, HttpStatus.ACCEPTED);

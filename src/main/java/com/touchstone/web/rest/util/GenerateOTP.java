@@ -28,11 +28,11 @@ public class GenerateOTP {
 	 * 1 = Verified
 	 * 2 = OTP expired
 	*/
-	public short checkOTP(String mobile, int otp){
+	public short checkOTP(String mobile, int otps){
 		if(this.otp.get(mobile) != null){
 			Date currentDate = new Date();
 			if(currentDate.compareTo(this.otpDate.get(mobile)) <=0){
-				if(this.otp.get(mobile) == otp)
+				if(this.otp.get(mobile) == otps)
 					return 1;
 				else
 					return 0;

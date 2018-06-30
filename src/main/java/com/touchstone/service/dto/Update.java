@@ -29,7 +29,18 @@ public class Update {
 	private String firstName;
 
 	@JsonInclude(Include.NON_NULL)
+	private String enterpriseName;
+
+	@JsonInclude(Include.NON_NULL)
 	private String lastName;
+
+	public String getEnterpriseName() {
+		return enterpriseName;
+	}
+
+	public void setEnterpriseName(String enterpriseName) {
+		this.enterpriseName = enterpriseName;
+	}
 
 	public String get$class() {
 		return $class;
