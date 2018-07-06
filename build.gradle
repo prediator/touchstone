@@ -176,6 +176,10 @@ dependencies {
     compile ("io.springfox:springfox-swagger2") {
         exclude module: 'mapstruct'
     }
+    compile group: 'com.amazonaws', name: 'aws-java-sdk-s3', version: '1.11.289'
+    compile group: 'com.amazonaws', name: 'aws-java-sdk-kms', version: '1.11.289'
+	compile group: 'com.amazonaws', name: 'aws-java-sdk-core', version: '1.11.289'
+    
     compile "io.springfox:springfox-bean-validators"
     compile "org.mapstruct:mapstruct-jdk8:${mapstruct_version}"
     testCompile "com.jayway.jsonpath:json-path"

@@ -24,7 +24,7 @@ import java.time.Instant;
  */
 
 @org.springframework.data.mongodb.core.mapping.Document(collection = "user")
-public class User  implements Serializable {
+public class User implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 
@@ -49,6 +49,10 @@ public class User  implements Serializable {
 	@Size(max = 50)
 	@Field("lastName")
 	private String lastName;
+
+	@Size(max = 50)
+	@Field("enterpriseName")
+	private String enterpriseName;
 
 	@JsonIgnore
 	@NotNull
@@ -89,6 +93,14 @@ public class User  implements Serializable {
 
 	public String getLogin() {
 		return login;
+	}
+
+	public String getEnterpriseName() {
+		return enterpriseName;
+	}
+
+	public void setEnterpriseName(String enterpriseName) {
+		this.enterpriseName = enterpriseName;
 	}
 
 	// Lowercase the login before saving it in database

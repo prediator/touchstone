@@ -1,6 +1,11 @@
 package com.touchstone.web.rest;
 
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -17,15 +22,28 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
 
+import com.amazonaws.AmazonClientException;
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.model.CannedAccessControlList;
+import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.codahale.metrics.annotation.Timed;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 import com.touchstone.config.Constants;
 import com.touchstone.domain.User;
 import com.touchstone.domain.UserType;
+import com.touchstone.repository.DocsRepository;
+import com.touchstone.repository.UserRepository;
 import com.touchstone.service.MailService;
 import com.touchstone.service.UserService;
+import com.touchstone.service.dto.AmazonS3DTO;
 import com.touchstone.service.dto.Consumer;
 import com.touchstone.service.dto.ConsumerDTO;
 import com.touchstone.service.dto.Enterprise;
@@ -33,6 +51,7 @@ import com.touchstone.service.dto.EnterpriseDTO;
 import com.touchstone.service.dto.Update;
 import com.touchstone.service.dto.Validation;
 import com.touchstone.service.util.RandomUtil;
+import com.touchstone.web.rest.errors.EmailAlreadyUsedException;
 import com.touchstone.web.rest.util.GenerateOTP;
 
 import ma.glasnost.orika.MapperFacade;
@@ -52,11 +71,19 @@ public class ConsumerResource {
 
 	private final MailService mailService;
 
+	private final UserRepository userRepository;
+
+	private final DocsRepository docsRepository;
+
 	private GenerateOTP generateOtp = new GenerateOTP();
 
-	public ConsumerResource(UserService userService, MailService mailService) {
+	public ConsumerResource(UserService userService, MailService mailService, UserRepository userRepository,
+			DocsRepository docsRepository) {
+		super();
 		this.userService = userService;
 		this.mailService = mailService;
+		this.userRepository = userRepository;
+		this.docsRepository = docsRepository;
 	}
 
 	/**
@@ -79,6 +106,11 @@ public class ConsumerResource {
 		data.setPassword(consumer.getPassword());
 		data.setUserType(UserType.CONSUMER.name());
 		data.setLangKey(consumer.getLangKey());
+
+		userRepository.findOneByEmailIgnoreCase(data.getEmail()).ifPresent(u -> {
+			throw new EmailAlreadyUsedException();
+		});
+
 		userService.registerConsumer(data);
 
 		MapperFactory mapperFactory = new DefaultMapperFactory.Builder().build();
@@ -156,7 +188,6 @@ public class ConsumerResource {
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
 	public ResponseEntity<String> registerAccount(@RequestBody Enterprise enterprise) {
-
 		User data = new User();
 
 		data.setUserId(RandomUtil.generateActivationKey());
@@ -164,7 +195,12 @@ public class ConsumerResource {
 		data.setPassword(enterprise.getPassword());
 		data.setUserType(UserType.ENTERPRISE.name());
 		data.setLangKey(enterprise.getLangKey());
-		userService.registerConsumer(data);
+
+		userRepository.findOneByEmailIgnoreCase(data.getEmail()).ifPresent(u -> {
+			throw new EmailAlreadyUsedException();
+		});
+
+		userService.registerEnterprise(data);
 
 		MapperFactory mapperFactory = new DefaultMapperFactory.Builder().build();
 		mapperFactory.classMap(Enterprise.class, EnterpriseDTO.class);
@@ -459,6 +495,82 @@ public class ConsumerResource {
 		} else {
 			return new ResponseEntity<List<Enterprise>>(HttpStatus.UNAUTHORIZED);
 		}
+	}
+
+	/**
+	 * POST /Enterprise/email/{email} : To get Enterprise by Email
+	 *
+	 * @param email
+	 *            the user email
+	 */
+	@GetMapping("/documents/{id}")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public ResponseEntity<List<Enterprise>> getDocsById(@PathVariable Long id) {
+
+		RestTemplate rt = new RestTemplate();
+		rt.getMessageConverters().add(new StringHttpMessageConverter());
+		
+	    docsRepository.findAllByUser(null, id);
+		String uri = new String(Constants.Url + "/queries/selectEnterpriseByEmail?email=" + email);
+		List<AmazonS3> data = rt.getForObject(uri, List.class);
+
+		return new ResponseEntity<List<AmazonS3>>(data, HttpStatus.ACCEPTED);
+
+	}
+
+	@PostMapping("/upload/{id}/{name}/{qualification}")
+	@Timed
+	public void uploadDocs(MultipartHttpServletRequest request, @PathVariable Long id, @PathVariable String name,
+			@PathVariable String qualification) throws IOException {
+		com.touchstone.domain.AmazonS3 data = new com.touchstone.domain.AmazonS3();
+		try {
+			Iterator<String> itr = request.getFileNames();
+			MultipartFile file = request.getFile(itr.next());
+			String fileName = file.getOriginalFilename();
+			File dir = new File("/temp/" + id);
+			dir.mkdirs();
+			if (dir.isDirectory()) {
+				File serverFile = new File(dir, fileName);
+				serverFile.setReadable(true, false);
+				BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(serverFile));
+				stream.write(file.getBytes());
+				stream.close();
+
+				data.setFileName(fileName);
+				data.setUser((id));
+				data.setName(name);
+				data.setQualification(qualification);
+				docsRepository.save(data);
+				uploadFileToS3(request, id);
+				serverFile.delete();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void uploadFileToS3(MultipartHttpServletRequest request, Long id) {
+		AWSCredentials credentials = null;
+		try {
+			credentials = new BasicAWSCredentials("AKIAJ3V3PHYVKBNK3KEA", "cv7xkpJkTY4oVRrwuL7EKHnkrc3NUlDzV60rnduy");
+		} catch (Exception e) {
+			throw new AmazonClientException("Cannot load the credentials from the credential profiles file. "
+					+ "Please make sure that your credentials file is at the correct "
+					+ "location (~/.aws/credentials), and is in valid format.", e);
+		}
+
+		AmazonS3 s3 = AmazonS3ClientBuilder.standard().withCredentials(new AWSStaticCredentialsProvider(credentials))
+				.withRegion("ap-south-1").build();
+
+		String bucketName = "touchstonebackend";
+		Iterator<String> itr = request.getFileNames();
+		MultipartFile file = request.getFile(itr.next());
+		String fileName = file.getOriginalFilename();
+
+		s3.putObject(new PutObjectRequest(bucketName, "/" + id + "/" + fileName, new File(id + "/" + fileName))
+				.withCannedAcl(CannedAccessControlList.PublicRead));
+
 	}
 
 }

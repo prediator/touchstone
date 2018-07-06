@@ -1,15 +1,14 @@
 package com.touchstone.repository;
 
-import com.touchstone.domain.User;
+import java.util.Optional;
 
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
-import java.util.List;
-import java.util.Optional;
-import java.time.Instant;
+
+import com.touchstone.domain.User;
 
 /**
  * Spring Data MongoDB repository for the User entity.
