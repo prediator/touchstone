@@ -17,7 +17,7 @@ spring:
         serialization.indent_output: true
     data:
         mongodb:
-            uri: mongodb://localhost:27017
+            uri: mongodb://52.23.221.127:27017
             database: touchstone
     mail:
         host: smtp.gmail.com

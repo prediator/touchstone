@@ -6,13 +6,13 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
-import com.touchstone.domain.AmazonS3;
+import com.touchstone.domain.Inquiry;
 
 /**
  * Spring Data MongoDB repository for the User entity.
  */
 @Repository
-public interface DocsRepository extends MongoRepository<AmazonS3, String> {
+public interface InquiryRepository extends MongoRepository<Inquiry, String> {
 	
-	List<AmazonS3> findAllByUser(Pageable pageable, String user);
+	List<Inquiry> findAllByEmail(Pageable pageable, String user);
 }

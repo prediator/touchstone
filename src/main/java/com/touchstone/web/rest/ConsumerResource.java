@@ -5,10 +5,11 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -19,11 +20,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.multipart.MultipartHttpServletRequest;
 
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.auth.AWSCredentials;
@@ -34,16 +35,19 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.codahale.metrics.annotation.Timed;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 import com.touchstone.config.Constants;
+import com.touchstone.domain.Inquiry;
 import com.touchstone.domain.User;
 import com.touchstone.domain.UserType;
 import com.touchstone.repository.DocsRepository;
+import com.touchstone.repository.InquiryRepository;
 import com.touchstone.repository.UserRepository;
 import com.touchstone.service.MailService;
 import com.touchstone.service.UserService;
-import com.touchstone.service.dto.AmazonS3DTO;
 import com.touchstone.service.dto.Consumer;
 import com.touchstone.service.dto.ConsumerDTO;
 import com.touchstone.service.dto.Enterprise;
@@ -75,15 +79,18 @@ public class ConsumerResource {
 
 	private final DocsRepository docsRepository;
 
+	private final InquiryRepository inquiryRepository;
+
 	private GenerateOTP generateOtp = new GenerateOTP();
 
 	public ConsumerResource(UserService userService, MailService mailService, UserRepository userRepository,
-			DocsRepository docsRepository) {
+			DocsRepository docsRepository, InquiryRepository inquiryRepository) {
 		super();
 		this.userService = userService;
 		this.mailService = mailService;
 		this.userRepository = userRepository;
 		this.docsRepository = docsRepository;
+		this.inquiryRepository = inquiryRepository;
 	}
 
 	/**
@@ -91,11 +98,12 @@ public class ConsumerResource {
 	 *
 	 * @param consumer
 	 *            the consumer data
+	 * @throws JsonProcessingException 
 	 */
 	@PostMapping("/Consumer")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<String> registerAccount(@RequestBody Consumer consumer) {
+	public ResponseEntity<String> registerAccount(@RequestBody Consumer consumer) throws JsonProcessingException {
 
 		User data = new User();
 
@@ -121,7 +129,11 @@ public class ConsumerResource {
 		dest.setUserId(data.getUserId());
 		dest.set$class("org.touchstone.basic.Consumer");
 		dest.getAddress().set$class("org.touchstone.basic.Address");
-
+		
+		ObjectMapper mappers = new ObjectMapper();
+		String jsonInString = mappers.writeValueAsString(dest);
+		System.out.println(jsonInString);
+		
 		RestTemplate rt = new RestTemplate();
 		rt.getMessageConverters().add(new StringHttpMessageConverter());
 		String uri = new String(Constants.Url + "/Consumer");
@@ -183,11 +195,12 @@ public class ConsumerResource {
 	 *
 	 * @param consumer
 	 *            the consumer data
+	 * @throws JsonProcessingException
 	 */
 	@PostMapping("/Enterprise")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<String> registerAccount(@RequestBody Enterprise enterprise) {
+	public ResponseEntity<String> registerAccount(@RequestBody Enterprise enterprise) throws JsonProcessingException {
 		User data = new User();
 
 		data.setUserId(RandomUtil.generateActivationKey());
@@ -199,8 +212,6 @@ public class ConsumerResource {
 		userRepository.findOneByEmailIgnoreCase(data.getEmail()).ifPresent(u -> {
 			throw new EmailAlreadyUsedException();
 		});
-
-		userService.registerEnterprise(data);
 
 		MapperFactory mapperFactory = new DefaultMapperFactory.Builder().build();
 		mapperFactory.classMap(Enterprise.class, EnterpriseDTO.class);
@@ -214,7 +225,13 @@ public class ConsumerResource {
 		RestTemplate rt = new RestTemplate();
 		rt.getMessageConverters().add(new StringHttpMessageConverter());
 		String uri = new String(Constants.Url + "/Enterprise");
+
+		ObjectMapper mappers = new ObjectMapper();
+		String jsonInString = mappers.writeValueAsString(dest);
+		System.out.println(jsonInString);
+
 		rt.postForObject(uri, dest, EnterpriseDTO.class);
+		userService.registerEnterprise(data);
 		mailService.sendEmail(
 				data.getEmail(), "Account Created", "http://ridgelift.io:8080/api/verifye/"
 						+ generateOtp.storeOTP(data.getUserId()) + "/" + data.getEmail() + "/" + data.getUserId(),
@@ -506,29 +523,29 @@ public class ConsumerResource {
 	@GetMapping("/documents/{id}")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<List<Enterprise>> getDocsById(@PathVariable Long id) {
+	public ResponseEntity<List<com.touchstone.domain.AmazonS3>> getDocsById(@PathVariable String id) {
 
 		RestTemplate rt = new RestTemplate();
 		rt.getMessageConverters().add(new StringHttpMessageConverter());
-		
-	    docsRepository.findAllByUser(null, id);
-		String uri = new String(Constants.Url + "/queries/selectEnterpriseByEmail?email=" + email);
-		List<AmazonS3> data = rt.getForObject(uri, List.class);
 
-		return new ResponseEntity<List<AmazonS3>>(data, HttpStatus.ACCEPTED);
+		List<com.touchstone.domain.AmazonS3> dta = docsRepository.findAllByUser(null, id);
+
+		return new ResponseEntity<List<com.touchstone.domain.AmazonS3>>(dta, HttpStatus.ACCEPTED);
 
 	}
 
-	@PostMapping("/upload/{id}/{name}/{qualification}")
+	@PostMapping("/upload")
 	@Timed
-	public void uploadDocs(MultipartHttpServletRequest request, @PathVariable Long id, @PathVariable String name,
-			@PathVariable String qualification) throws IOException {
+	public void uploadDocs(@RequestParam("file") MultipartFile file, @RequestParam("education") String education)
+			throws IOException {
 		com.touchstone.domain.AmazonS3 data = new com.touchstone.domain.AmazonS3();
 		try {
-			Iterator<String> itr = request.getFileNames();
-			MultipartFile file = request.getFile(itr.next());
+			JSONParser parser = new JSONParser();
+			JSONObject obj = (JSONObject) parser.parse(education);
+
 			String fileName = file.getOriginalFilename();
-			File dir = new File("/temp/" + id);
+			File dir = new File("/tmp/");
+
 			dir.mkdirs();
 			if (dir.isDirectory()) {
 				File serverFile = new File(dir, fileName);
@@ -538,11 +555,11 @@ public class ConsumerResource {
 				stream.close();
 
 				data.setFileName(fileName);
-				data.setUser((id));
-				data.setName(name);
-				data.setQualification(qualification);
+				data.setUser(obj.get("id").toString());
+				data.setName(obj.get("name").toString());
+				data.setQualification(obj.get("qualification").toString());
 				docsRepository.save(data);
-				uploadFileToS3(request, id);
+				uploadFileToS3(file, obj.get("id").toString());
 				serverFile.delete();
 			}
 		} catch (Exception e) {
@@ -550,7 +567,25 @@ public class ConsumerResource {
 		}
 	}
 
-	public void uploadFileToS3(MultipartHttpServletRequest request, Long id) {
+	/**
+	 * POST /UpdateName : Address validation
+	 *
+	 * @param address
+	 *            the phone data
+	 */
+	@PostMapping("/inquiry")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public ResponseEntity<String> inquiry(@RequestBody Inquiry inquiry) {
+		System.out.println(inquiry);
+		inquiryRepository.save(inquiry);
+		mailService.sendEmail("my3d3d@gmail.com", "Inquiry", "Name: " + inquiry.getName() + "\n Phone " + inquiry.getPhone()
+				+ "\n Email: " + inquiry.getEmail() + "\n Message " + inquiry.getMessage(), false, true);
+		return new ResponseEntity(HttpStatus.CREATED);
+
+	}
+
+	public void uploadFileToS3(MultipartFile file, String id) {
 		AWSCredentials credentials = null;
 		try {
 			credentials = new BasicAWSCredentials("AKIAJ3V3PHYVKBNK3KEA", "cv7xkpJkTY4oVRrwuL7EKHnkrc3NUlDzV60rnduy");
@@ -564,11 +599,10 @@ public class ConsumerResource {
 				.withRegion("ap-south-1").build();
 
 		String bucketName = "touchstonebackend";
-		Iterator<String> itr = request.getFileNames();
-		MultipartFile file = request.getFile(itr.next());
+
 		String fileName = file.getOriginalFilename();
 
-		s3.putObject(new PutObjectRequest(bucketName, "/" + id + "/" + fileName, new File(id + "/" + fileName))
+		s3.putObject(new PutObjectRequest(bucketName, id + "/" + fileName, new File("/tmp/" + fileName))
 				.withCannedAcl(CannedAccessControlList.PublicRead));
 
 	}

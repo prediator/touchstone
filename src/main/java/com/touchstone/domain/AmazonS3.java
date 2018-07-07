@@ -9,17 +9,14 @@ import java.io.Serializable;
 /**
  * docs
  */
-@Document(collection = "docs")
+
+@org.springframework.data.mongodb.core.mapping.Document(collection = "docs")
 public class AmazonS3 implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 
-	@NotNull
-	@Size(max = 50)
-	@Id
-	private Integer id;
 
-	private Long user;
+	private String user;
 
 	private String name;
 
@@ -27,19 +24,13 @@ public class AmazonS3 implements Serializable {
 
 	private String fileName;
 
-	public Integer getId() {
-		return id;
-	}
+	 
 
-	public void setId(Integer id) {
-		this.id = id;
-	}
-
-	public Long getUser() {
+	public String getUser() {
 		return user;
 	}
 
-	public void setUser(Long user) {
+	public void setUser(String user) {
 		this.user = user;
 	}
 
@@ -69,7 +60,7 @@ public class AmazonS3 implements Serializable {
 
 	@Override
 	public String toString() {
-		return "AmazonS3 [id=" + id + ", user=" + user + ", name=" + name + ", qualification=" + qualification
+		return "AmazonS3 [ user=" + user + ", name=" + name + ", qualification=" + qualification
 				+ ", fileName=" + fileName + "]";
 	}
 
