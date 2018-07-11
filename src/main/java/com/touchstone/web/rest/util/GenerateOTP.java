@@ -29,6 +29,7 @@ public class GenerateOTP {
 	 * 2 = OTP expired
 	*/
 	public short checkOTP(String mobile, int otps){
+		System.out.println(this.otp);
 		if(this.otp.get(mobile) != null){
 			Date currentDate = new Date();
 			if(currentDate.compareTo(this.otpDate.get(mobile)) <=0){

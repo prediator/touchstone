@@ -22,7 +22,7 @@ spring:
         host: smtp.gmail.com
         port: 587
         username: umodhe@ridgelift.io
-        password: vtk102sl$
+        password: 'vtk102sl&'
         tls: true
         protocol: smtp
         properties.mail.smtp:

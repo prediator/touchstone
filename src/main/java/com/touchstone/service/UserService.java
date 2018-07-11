@@ -132,7 +132,7 @@ public class UserService {
         newUser.setEmail(newUser.getEmail());
         newUser.setLangKey(newUser.getLangKey());
         // new user is not active
-        newUser.setActivated(true);
+        newUser.setActivated(false);
         // new user gets registration key
         newUser.setActivationKey(RandomUtil.generateActivationKey());
         authorities.add(authority);
@@ -157,7 +157,7 @@ public class UserService {
         newUser.setEmail(newUser.getEmail());
         newUser.setLangKey(newUser.getLangKey());
         // new user is not active
-        newUser.setActivated(true);
+        newUser.setActivated(false);
         // new user gets registration key
         newUser.setActivationKey(RandomUtil.generateActivationKey());
         authorities.add(authority);

@@ -8,6 +8,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.validation.Valid;
+
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.slf4j.Logger;
@@ -56,7 +58,9 @@ import com.touchstone.service.dto.Update;
 import com.touchstone.service.dto.Validation;
 import com.touchstone.service.util.RandomUtil;
 import com.touchstone.web.rest.errors.EmailAlreadyUsedException;
+import com.touchstone.web.rest.errors.InvalidPasswordException;
 import com.touchstone.web.rest.util.GenerateOTP;
+import com.touchstone.web.rest.vm.ManagedUserVM;
 
 import ma.glasnost.orika.MapperFacade;
 import ma.glasnost.orika.MapperFactory;
@@ -98,7 +102,7 @@ public class ConsumerResource {
 	 *
 	 * @param consumer
 	 *            the consumer data
-	 * @throws JsonProcessingException 
+	 * @throws JsonProcessingException
 	 */
 	@PostMapping("/Consumer")
 	@Timed
@@ -107,6 +111,7 @@ public class ConsumerResource {
 
 		User data = new User();
 
+		data.setActivated(false);
 		data.setUserId(RandomUtil.generateActivationKey());
 		data.setEmail(consumer.getEmail().toLowerCase());
 		data.setFirstName(consumer.getFirstName());
@@ -114,7 +119,6 @@ public class ConsumerResource {
 		data.setPassword(consumer.getPassword());
 		data.setUserType(UserType.CONSUMER.name());
 		data.setLangKey(consumer.getLangKey());
-
 		userRepository.findOneByEmailIgnoreCase(data.getEmail()).ifPresent(u -> {
 			throw new EmailAlreadyUsedException();
 		});
@@ -126,14 +130,15 @@ public class ConsumerResource {
 		MapperFacade mapper = mapperFactory.getMapperFacade();
 		ConsumerDTO dest = mapper.map(consumer, ConsumerDTO.class);
 
+		dest.setGender(null);
 		dest.setUserId(data.getUserId());
 		dest.set$class("org.touchstone.basic.Consumer");
 		dest.getAddress().set$class("org.touchstone.basic.Address");
-		
+
 		ObjectMapper mappers = new ObjectMapper();
 		String jsonInString = mappers.writeValueAsString(dest);
 		System.out.println(jsonInString);
-		
+
 		RestTemplate rt = new RestTemplate();
 		rt.getMessageConverters().add(new StringHttpMessageConverter());
 		String uri = new String(Constants.Url + "/Consumer");
@@ -151,7 +156,7 @@ public class ConsumerResource {
 	@ResponseStatus(HttpStatus.CREATED)
 	public String validedEmail(@PathVariable int code, @PathVariable String id, @PathVariable String uid) {
 
-		if (generateOtp.checkOTP(id, code) == 1) {
+		if (generateOtp.checkOTP(uid, code) == 1) {
 			Validation valid = new Validation();
 			valid.set$class("org.touchstone.basic.ValidateEmail");
 			valid.setIsEmailValidated(true);
@@ -161,6 +166,9 @@ public class ConsumerResource {
 			String uri = new String(Constants.Url + "/ValidateEmail");
 			rt.postForObject(uri, valid, Validation.class);
 
+			User user = userRepository.findOne(uid);
+			user.setActivated(true);
+			userRepository.save(user);
 			generateOtp.removeOtp(id);
 			return "Success";
 		}
@@ -173,7 +181,7 @@ public class ConsumerResource {
 	@ResponseStatus(HttpStatus.CREATED)
 	public String validedEmailEnterprise(@PathVariable int code, @PathVariable String id, @PathVariable String uid) {
 
-		if (generateOtp.checkOTP(id, code) == 1) {
+		if (generateOtp.checkOTP(uid, code) == 1) {
 			Validation valid = new Validation();
 			valid.set$class("org.touchstone.basic.ValidateEmail");
 			valid.setIsEmailValidated(true);
@@ -182,6 +190,10 @@ public class ConsumerResource {
 			rt.getMessageConverters().add(new StringHttpMessageConverter());
 			String uri = new String(Constants.Url + "/ValidateEmail");
 			rt.postForObject(uri, valid, Validation.class);
+
+			User user = userRepository.findOne(uid);
+			user.setActivated(true);
+			userRepository.save(user);
 
 			generateOtp.removeOtp(id);
 			return "Success";
@@ -202,7 +214,7 @@ public class ConsumerResource {
 	@ResponseStatus(HttpStatus.CREATED)
 	public ResponseEntity<String> registerAccount(@RequestBody Enterprise enterprise) throws JsonProcessingException {
 		User data = new User();
-
+		data.setActivated(false);
 		data.setUserId(RandomUtil.generateActivationKey());
 		data.setEmail(enterprise.getEmail().toLowerCase());
 		data.setPassword(enterprise.getPassword());
@@ -238,6 +250,15 @@ public class ConsumerResource {
 				false, true);
 		return new ResponseEntity(HttpStatus.CREATED);
 
+	}
+
+	@GetMapping("/ValidateMobile")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public void registerAccount() {
+
+		mailService.sendEmail("my3d3d@gmail.com", "Account Created", "http://ridgelift.io:8080/api/verifye/", false,
+				true);
 	}
 
 	/**
@@ -579,8 +600,11 @@ public class ConsumerResource {
 	public ResponseEntity<String> inquiry(@RequestBody Inquiry inquiry) {
 		System.out.println(inquiry);
 		inquiryRepository.save(inquiry);
-		mailService.sendEmail("my3d3d@gmail.com", "Inquiry", "Name: " + inquiry.getName() + "\n Phone " + inquiry.getPhone()
-				+ "\n Email: " + inquiry.getEmail() + "\n Message " + inquiry.getMessage(), false, true);
+		mailService
+				.sendEmail(
+						"my3d3d@gmail.com", "Inquiry", "Name: " + inquiry.getName() + "\n Phone " + inquiry.getPhone()
+								+ "\n Email: " + inquiry.getEmail() + "\n Message " + inquiry.getMessage(),
+						false, true);
 		return new ResponseEntity(HttpStatus.CREATED);
 
 	}
