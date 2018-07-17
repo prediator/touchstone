@@ -65,7 +65,7 @@ jhipster:
                 token-validity-in-seconds: 86400
                 token-validity-in-seconds-for-remember-me: 2592000
     mail: # specific JHipster mail property, for standard properties see MailProperties
-        from: http://www.ridgelift.io
+        from: no-reply@ridgelift.io
         base-url: http://www.ridgelift.io/touchstone # Modify according to your server's URL
     metrics: # DropWizard Metrics configuration, used by MetricsConfiguration
         jmx.enabled: true
