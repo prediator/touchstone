@@ -53,8 +53,9 @@ public class RestAPIResource {
 
 	private final Logger log = LoggerFactory.getLogger(RestAPIResource.class);
 	private final UserService userService;
-	private final String tmpDir = "C:\\Users\\Kadri\\Desktop\\Touch\\build\\libs\\";
-
+	//private final String tmpDir = "C:\\Users\\Kadri\\Desktop\\Touch\\build\\libs\\";
+	private final String tmpDir = "/tmp/";
+	
 	public RestAPIResource(UserService userService) {
 		this.userService = userService;
 	}
