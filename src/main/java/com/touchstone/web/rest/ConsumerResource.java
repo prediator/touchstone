@@ -54,6 +54,7 @@ import com.touchstone.service.dto.Consumer;
 import com.touchstone.service.dto.ConsumerDTO;
 import com.touchstone.service.dto.Enterprise;
 import com.touchstone.service.dto.EnterpriseDTO;
+import com.touchstone.service.dto.Profile;
 import com.touchstone.service.dto.Update;
 import com.touchstone.service.dto.Validation;
 import com.touchstone.service.util.RandomUtil;
@@ -109,6 +110,7 @@ public class ConsumerResource {
 	@ResponseStatus(HttpStatus.CREATED)
 	public ResponseEntity<String> registerAccount(@RequestBody Consumer consumer) throws JsonProcessingException {
 
+		String profileId = RandomUtil.generateActivationKey();
 		User data = new User();
 
 		data.setActivated(false);
@@ -119,6 +121,7 @@ public class ConsumerResource {
 		data.setPassword(consumer.getPassword());
 		data.setUserType(UserType.CONSUMER.name());
 		data.setLangKey(consumer.getLangKey());
+		data.setProfileId(profileId);
 		userRepository.findOneByEmailIgnoreCase(data.getEmail()).ifPresent(u -> {
 			throw new EmailAlreadyUsedException();
 		});
@@ -135,14 +138,26 @@ public class ConsumerResource {
 		dest.set$class("org.touchstone.basic.Consumer");
 		dest.getAddress().set$class("org.touchstone.basic.Address");
 
-		ObjectMapper mappers = new ObjectMapper();
-		String jsonInString = mappers.writeValueAsString(dest);
-		System.out.println(jsonInString);
-
 		RestTemplate rt = new RestTemplate();
 		rt.getMessageConverters().add(new StringHttpMessageConverter());
 		String uri = new String(Constants.Url + "/Consumer");
 		rt.postForObject(uri, dest, ConsumerDTO.class);
+		
+		Profile profile = new Profile();
+		profile.setProfileId(data.getProfileId());
+		profile.setUser("resource:org.touchstone.basic.Consumer#"+data.getUserId());
+		profile.setYearsOfExperience("");
+		
+		ObjectMapper mappers = new ObjectMapper();
+		String jsonInString = mappers.writeValueAsString(profile);
+		System.out.println(jsonInString);
+		
+		RestTemplate rt1 = new RestTemplate();
+		rt1.getMessageConverters().add(new StringHttpMessageConverter());
+		String uri1 = new String(Constants.Url + "/Profile");
+		rt1.postForObject(uri1, profile, Profile.class);
+ 
+		
 		mailService.sendEmail(
 				data.getEmail(), "Account Created", "http://ridgelift.io:8080/api/verifyc/"
 						+ generateOtp.storeOTP(data.getUserId()) + "/" + data.getEmail() + "/" + data.getUserId(),
@@ -244,6 +259,14 @@ public class ConsumerResource {
 
 		rt.postForObject(uri, dest, EnterpriseDTO.class);
 		userService.registerEnterprise(data);
+		
+		Profile profile = new Profile();
+		
+		RestTemplate rt1 = new RestTemplate();
+		rt1.getMessageConverters().add(new StringHttpMessageConverter());
+		String uri1 = new String(Constants.Url + "/Profile");
+		rt1.postForObject(uri1, profile, Profile.class);
+		
 		mailService.sendEmail(
 				data.getEmail(), "Account Created", "http://ridgelift.io:8080/api/verifye/"
 						+ generateOtp.storeOTP(data.getUserId()) + "/" + data.getEmail() + "/" + data.getUserId(),

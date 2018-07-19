@@ -88,8 +88,19 @@ public class User implements Serializable {
 	@Field("reset_date")
 	private Instant resetDate = null;
 
+	@Field("profile_id")
+	private String profileId;
+
 	@JsonIgnore
 	private Set<Authority> authorities = new HashSet<>();
+
+	public String getProfileId() {
+		return profileId;
+	}
+
+	public void setProfileId(String profileId) {
+		this.profileId = profileId;
+	}
 
 	public String getLogin() {
 		return login;
@@ -232,8 +243,10 @@ public class User implements Serializable {
 
 	@Override
 	public String toString() {
-		return "User{" + "login='" + login + '\'' + ", firstName='" + firstName + '\'' + ", lastName='" + lastName
-				+ '\'' + ", email='" + email + '\'' + ", imageUrl='" + imageUrl + '\'' + ", activated='" + activated
-				+ '\'' + ", langKey='" + langKey + '\'' + ", activationKey='" + activationKey + '\'' + "}";
+		return "User [userId=" + userId + ", login=" + login + ", userType=" + userType + ", firstName=" + firstName
+				+ ", lastName=" + lastName + ", enterpriseName=" + enterpriseName + ", password=" + password
+				+ ", email=" + email + ", activated=" + activated + ", langKey=" + langKey + ", imageUrl=" + imageUrl
+				+ ", activationKey=" + activationKey + ", resetKey=" + resetKey + ", resetDate=" + resetDate
+				+ ", profileId=" + profileId + ", authorities=" + authorities + "]";
 	}
 }

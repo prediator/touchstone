@@ -52,6 +52,8 @@ public class UserDTO {
 
 	private String state;
 
+	private String profileId;
+
 	private UserType userType;
 
 	private String zipcode;
@@ -70,6 +72,7 @@ public class UserDTO {
 		this.emailId = user.getEmail();
 		this.activated = user.getActivated();
 		this.langKey = user.getLangKey();
+		this.profileId = user.getProfileId();
 		if (user.getUserType().equalsIgnoreCase("consumer")) {
 			this.userType = userType.CONSUMER;
 		} else {
@@ -77,6 +80,14 @@ public class UserDTO {
 		}
 
 		this.authorities = user.getAuthorities().stream().map(Authority::getName).collect(Collectors.toSet());
+	}
+
+	public String getProfileId() {
+		return profileId;
+	}
+
+	public void setProfileId(String profileId) {
+		this.profileId = profileId;
 	}
 
 	public String getAddress1() {
