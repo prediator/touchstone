@@ -103,6 +103,10 @@ public class RestAPIResource {
 			certificate.getCertification().getValidation().setValidationStatus("VALIDATE");
 			certificate.getCertification().getValidation().setValidationType("MANUAL");
 
+			ObjectMapper mappers = new ObjectMapper();
+			String jsonInString = mappers.writeValueAsString(certificate);
+			System.out.println(jsonInString);
+			
 			RestTemplate rt = new RestTemplate();
 			rt.getMessageConverters().add(new StringHttpMessageConverter());
 			String uri = new String(Constants.Url + "/addCertification");
@@ -201,7 +205,7 @@ public class RestAPIResource {
 			RestTemplate rt = new RestTemplate();
 			rt.getMessageConverters().add(new StringHttpMessageConverter());
 			String uri = new String(Constants.Url + "/addEducation");
-			rt.postForObject(uri, education, EducationDTO.class);
+			rt.postForObject(uri, edu, EducationDTO.class);
 			return new ResponseEntity(HttpStatus.CREATED);
 		} catch (Exception e) {
 			e.printStackTrace();
