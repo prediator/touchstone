@@ -13,7 +13,6 @@ import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -38,10 +37,14 @@ import com.touchstone.service.UserService;
 import com.touchstone.service.dto.Certificate;
 import com.touchstone.service.dto.CertificateValidation;
 import com.touchstone.service.dto.Certification;
+import com.touchstone.service.dto.Education;
 import com.touchstone.service.dto.EducationDTO;
+import com.touchstone.service.dto.Experience;
 import com.touchstone.service.dto.ExperienceDTO;
+import com.touchstone.service.dto.Project;
 import com.touchstone.service.dto.ProjectDTO;
 import com.touchstone.service.dto.SkillDTO;
+import com.touchstone.service.dto.Skills;
 
 /**
  * REST controller for adding certificate, Education, Experience, Project,
@@ -199,6 +202,138 @@ public class RestAPIResource {
 			rt.getMessageConverters().add(new StringHttpMessageConverter());
 			String uri = new String(Constants.Url + "/addEducation");
 			rt.postForObject(uri, education, EducationDTO.class);
+			return new ResponseEntity(HttpStatus.CREATED);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return new ResponseEntity(HttpStatus.BAD_REQUEST);
+		}
+	}
+
+	@GetMapping("/validateEducation")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public ResponseEntity<String> validateEducation(Principal login) throws JsonProcessingException {
+
+		try {
+			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
+			EducationDTO education = new EducationDTO();
+			education.set$class("org.touchstone.basic.validateEducation");
+			education.setEducation(new Education());
+			education.getEducation().set$class("org.touchstone.basic.Education");
+			education.getEducation().setValidation(new CertificateValidation());
+			education.getEducation().getValidation().set$class("org.touchstone.basic.Validation");
+			education.getEducation().getValidation().setValidationStatus("VALIDATE");
+			education.getEducation().getValidation().setValidationType("MANUAL");
+			education.setProfile("resource:org.touchstone.basic.Profile#" + user.getProfileId());
+			education.getEducation().setSupportingDocumentLinks(new String[0]);
+
+			ObjectMapper mappers = new ObjectMapper();
+			String jsonInString = mappers.writeValueAsString(education);
+			System.out.println(jsonInString);
+
+			RestTemplate rt = new RestTemplate();
+			rt.getMessageConverters().add(new StringHttpMessageConverter());
+			String uri = new String(Constants.Url + "/validateEducation");
+			rt.postForObject(uri, education, Certificate.class);
+			return new ResponseEntity(HttpStatus.CREATED);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return new ResponseEntity(HttpStatus.BAD_REQUEST);
+		}
+	}
+	
+	@GetMapping("/validateExperience")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public ResponseEntity<String> validateExperience(Principal login) throws JsonProcessingException {
+
+		try {
+			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
+			ExperienceDTO education = new ExperienceDTO();
+			education.set$class("org.touchstone.basic.validateExperience");
+			education.setExperience(new Experience());
+			education.getExperience().set$class("org.touchstone.basic.Experience");
+			education.getExperience().setValidation(new CertificateValidation());
+			education.getExperience().getValidation().set$class("org.touchstone.basic.Validation");
+			education.getExperience().getValidation().setValidationStatus("VALIDATE");
+			education.getExperience().getValidation().setValidationType("MANUAL");
+			education.setProfile("resource:org.touchstone.basic.Profile#" + user.getProfileId());
+			education.getExperience().setSupportingDocumentLinks(new String[0]);
+
+			ObjectMapper mappers = new ObjectMapper();
+			String jsonInString = mappers.writeValueAsString(education);
+			System.out.println(jsonInString);
+
+			RestTemplate rt = new RestTemplate();
+			rt.getMessageConverters().add(new StringHttpMessageConverter());
+			String uri = new String(Constants.Url + "/validateExperience");
+			rt.postForObject(uri, education, Certificate.class);
+			return new ResponseEntity(HttpStatus.CREATED);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return new ResponseEntity(HttpStatus.BAD_REQUEST);
+		}
+	}
+	
+	@GetMapping("/validateProject")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public ResponseEntity<String> validateProject(Principal login) throws JsonProcessingException {
+
+		try {
+			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
+			ProjectDTO education = new ProjectDTO();
+			education.set$class("org.touchstone.basic.validateProject");
+			education.setProject(new Project());
+			education.getProject().set$class("org.touchstone.basic.Project");
+			education.getProject().setValidation(new CertificateValidation());
+			education.getProject().getValidation().set$class("org.touchstone.basic.Validation");
+			education.getProject().getValidation().setValidationStatus("VALIDATE");
+			education.getProject().getValidation().setValidationType("MANUAL");
+			education.setProfile("resource:org.touchstone.basic.Profile#" + user.getProfileId());
+			education.getProject().setSupportingDocumentLinks(new String[0]);
+
+			ObjectMapper mappers = new ObjectMapper();
+			String jsonInString = mappers.writeValueAsString(education);
+			System.out.println(jsonInString);
+
+			RestTemplate rt = new RestTemplate();
+			rt.getMessageConverters().add(new StringHttpMessageConverter());
+			String uri = new String(Constants.Url + "/validateProject");
+			rt.postForObject(uri, education, Certificate.class);
+			return new ResponseEntity(HttpStatus.CREATED);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return new ResponseEntity(HttpStatus.BAD_REQUEST);
+		}
+	}
+	
+	@GetMapping("/validateSkills")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public ResponseEntity<String> validateSkills(Principal login) throws JsonProcessingException {
+
+		try {
+			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
+			SkillDTO education = new SkillDTO();
+			education.set$class("org.touchstone.basic.validateSkills");
+			education.setSkills(new Skills());
+			education.getSkills().set$class("org.touchstone.basic.Skills");
+			education.getSkills().setValidation(new CertificateValidation());
+			education.getSkills().getValidation().set$class("org.touchstone.basic.Validation");
+			education.getSkills().getValidation().setValidationStatus("VALIDATE");
+			education.getSkills().getValidation().setValidationType("MANUAL");
+			education.setProfile("resource:org.touchstone.basic.Profile#" + user.getProfileId());
+			education.getSkills().setSupportingDocumentLinks(new String[0]);
+
+			ObjectMapper mappers = new ObjectMapper();
+			String jsonInString = mappers.writeValueAsString(education);
+			System.out.println(jsonInString);
+
+			RestTemplate rt = new RestTemplate();
+			rt.getMessageConverters().add(new StringHttpMessageConverter());
+			String uri = new String(Constants.Url + "/validateSkills");
+			rt.postForObject(uri, education, Certificate.class);
 			return new ResponseEntity(HttpStatus.CREATED);
 		} catch (Exception e) {
 			e.printStackTrace();
