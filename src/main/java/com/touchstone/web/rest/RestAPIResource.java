@@ -53,9 +53,10 @@ public class RestAPIResource {
 
 	private final Logger log = LoggerFactory.getLogger(RestAPIResource.class);
 	private final UserService userService;
-	//private final String tmpDir = "C:\\Users\\Kadri\\Desktop\\Touch\\build\\libs\\";
+	// private final String tmpDir =
+	// "C:\\Users\\Kadri\\Desktop\\Touch\\build\\libs\\";
 	private final String tmpDir = "/tmp/";
-	
+
 	public RestAPIResource(UserService userService) {
 		this.userService = userService;
 	}
@@ -110,7 +111,6 @@ public class RestAPIResource {
 		}
 	}
 
-
 	/**
 	 * POST /addCertification : Add certification.
 	 *
@@ -135,11 +135,11 @@ public class RestAPIResource {
 			certificate.getCertification().getValidation().setValidationType("MANUAL");
 			certificate.setProfile("resource:org.touchstone.basic.Profile#" + user.getProfileId());
 			certificate.getCertification().setSupportingDocumentLinks(new String[0]);
-			
+
 			ObjectMapper mappers = new ObjectMapper();
 			String jsonInString = mappers.writeValueAsString(certificate);
 			System.out.println(jsonInString);
-			
+
 			RestTemplate rt = new RestTemplate();
 			rt.getMessageConverters().add(new StringHttpMessageConverter());
 			String uri = new String(Constants.Url + "/validateCertification");
@@ -161,8 +161,40 @@ public class RestAPIResource {
 	@PostMapping("/addEducation")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<String> addEducation(@RequestBody EducationDTO education) throws JsonProcessingException {
+	public ResponseEntity<String> addEducation(@RequestParam("file") MultipartFile file,
+			@RequestParam("education") String education, Principal login) throws JsonProcessingException {
 		try {
+
+			ObjectMapper jsonParserClient = new ObjectMapper();
+
+			EducationDTO edu = jsonParserClient.readValue(education, EducationDTO.class);
+			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
+
+			String fileName = file.getOriginalFilename();
+			File dir = new File(tmpDir);
+
+			dir.mkdirs();
+			if (dir.isDirectory()) {
+				File serverFile = new File(dir, fileName);
+				serverFile.setReadable(true, false);
+				BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(serverFile));
+				stream.write(file.getBytes());
+				stream.close();
+				uploadFileToS3(file, user.getUserId(), "education");
+				serverFile.delete();
+			}
+
+			edu.set$class("org.touchstone.basic.addEducation");
+			edu.getEducation().set$class("org.touchstone.basic.Education");
+			edu.getEducation().getValidation().set$class("org.touchstone.basic.Validation");
+			edu.setProfile("resource:org.touchstone.basic.Profile#" + user.getProfileId());
+			edu.getEducation().getValidation().setValidationStatus("VALIDATE");
+			edu.getEducation().getValidation().setValidationType("MANUAL");
+
+			ObjectMapper mappers = new ObjectMapper();
+			String jsonInString = mappers.writeValueAsString(edu);
+			System.out.println(jsonInString);
+
 			RestTemplate rt = new RestTemplate();
 			rt.getMessageConverters().add(new StringHttpMessageConverter());
 			String uri = new String(Constants.Url + "/addEducation");
@@ -184,12 +216,44 @@ public class RestAPIResource {
 	@PostMapping("/addExperience")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<String> addEducation(@RequestBody ExperienceDTO experience) throws JsonProcessingException {
+	public ResponseEntity<String> addExperience(@RequestParam("file") MultipartFile file,
+			@RequestParam("experience") String education, Principal login) throws JsonProcessingException {
 		try {
+
+			ObjectMapper jsonParserClient = new ObjectMapper();
+
+			ExperienceDTO exp = jsonParserClient.readValue(education, ExperienceDTO.class);
+			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
+
+			String fileName = file.getOriginalFilename();
+			File dir = new File(tmpDir);
+
+			dir.mkdirs();
+			if (dir.isDirectory()) {
+				File serverFile = new File(dir, fileName);
+				serverFile.setReadable(true, false);
+				BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(serverFile));
+				stream.write(file.getBytes());
+				stream.close();
+				uploadFileToS3(file, user.getUserId(), "experience");
+				serverFile.delete();
+			}
+
+			exp.set$class("org.touchstone.basic.addExperience");
+			exp.getExperience().set$class("org.touchstone.basic.Experience");
+			exp.getExperience().getValidation().set$class("org.touchstone.basic.Validation");
+			exp.setProfile("resource:org.touchstone.basic.Profile#" + user.getProfileId());
+			exp.getExperience().getValidation().setValidationStatus("VALIDATE");
+			exp.getExperience().getValidation().setValidationType("MANUAL");
+
+			ObjectMapper mappers = new ObjectMapper();
+			String jsonInString = mappers.writeValueAsString(exp);
+			System.out.println(jsonInString);
+
 			RestTemplate rt = new RestTemplate();
 			rt.getMessageConverters().add(new StringHttpMessageConverter());
 			String uri = new String(Constants.Url + "/addExperience");
-			rt.postForObject(uri, experience, ExperienceDTO.class);
+			rt.postForObject(uri, exp, ExperienceDTO.class);
 			return new ResponseEntity(HttpStatus.CREATED);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -207,8 +271,40 @@ public class RestAPIResource {
 	@PostMapping("/addProject")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<String> addEducation(@RequestBody ProjectDTO project) throws JsonProcessingException {
+	public ResponseEntity<String> addProject(@RequestParam("file") MultipartFile file,
+			@RequestParam("project") String prj, Principal login) throws JsonProcessingException {
 		try {
+
+			ObjectMapper jsonParserClient = new ObjectMapper();
+
+			ProjectDTO project = jsonParserClient.readValue(prj, ProjectDTO.class);
+			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
+
+			String fileName = file.getOriginalFilename();
+			File dir = new File(tmpDir);
+
+			dir.mkdirs();
+			if (dir.isDirectory()) {
+				File serverFile = new File(dir, fileName);
+				serverFile.setReadable(true, false);
+				BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(serverFile));
+				stream.write(file.getBytes());
+				stream.close();
+				uploadFileToS3(file, user.getUserId(), "project");
+				serverFile.delete();
+			}
+
+			project.set$class("org.touchstone.basic.addProject");
+			project.getProject().set$class("org.touchstone.basic.Project");
+			project.getProject().getValidation().set$class("org.touchstone.basic.Validation");
+			project.setProfile("resource:org.touchstone.basic.Profile#" + user.getProfileId());
+			project.getProject().getValidation().setValidationStatus("VALIDATE");
+			project.getProject().getValidation().setValidationType("MANUAL");
+
+			ObjectMapper mappers = new ObjectMapper();
+			String jsonInString = mappers.writeValueAsString(project);
+			System.out.println(jsonInString);
+
 			RestTemplate rt = new RestTemplate();
 			rt.getMessageConverters().add(new StringHttpMessageConverter());
 			String uri = new String(Constants.Url + "/addProject");
@@ -230,12 +326,44 @@ public class RestAPIResource {
 	@PostMapping("/addSkills")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<String> addEducation(@RequestBody SkillDTO skills) throws JsonProcessingException {
+	public ResponseEntity<String> addSkill(@RequestParam("file") MultipartFile file,
+			@RequestParam("skills") String skil, Principal login) throws JsonProcessingException {
 		try {
+
+			ObjectMapper jsonParserClient = new ObjectMapper();
+
+			SkillDTO skill = jsonParserClient.readValue(skil, SkillDTO.class);
+			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
+
+			String fileName = file.getOriginalFilename();
+			File dir = new File(tmpDir);
+
+			dir.mkdirs();
+			if (dir.isDirectory()) {
+				File serverFile = new File(dir, fileName);
+				serverFile.setReadable(true, false);
+				BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(serverFile));
+				stream.write(file.getBytes());
+				stream.close();
+				uploadFileToS3(file, user.getUserId(), "project");
+				serverFile.delete();
+			}
+
+			skill.set$class("org.touchstone.basic.addProject");
+			skill.getSkills().set$class("org.touchstone.basic.Project");
+			skill.getSkills().getValidation().set$class("org.touchstone.basic.Validation");
+			skill.setProfile("resource:org.touchstone.basic.Profile#" + user.getProfileId());
+			skill.getSkills().getValidation().setValidationStatus("VALIDATE");
+			skill.getSkills().getValidation().setValidationType("MANUAL");
+
+			ObjectMapper mappers = new ObjectMapper();
+			String jsonInString = mappers.writeValueAsString(skill);
+			System.out.println(jsonInString);
+
 			RestTemplate rt = new RestTemplate();
 			rt.getMessageConverters().add(new StringHttpMessageConverter());
 			String uri = new String(Constants.Url + "/addSkills");
-			rt.postForObject(uri, skills, SkillDTO.class);
+			rt.postForObject(uri, skill, SkillDTO.class);
 			return new ResponseEntity(HttpStatus.CREATED);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -255,7 +383,7 @@ public class RestAPIResource {
 		return new ResponseEntity<String>(data, HttpStatus.CREATED);
 
 	}
-	
+
 	public void uploadFileToS3(MultipartFile file, String id, String type) {
 		AWSCredentials credentials = null;
 		try {
