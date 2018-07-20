@@ -241,7 +241,7 @@ public class RestAPIResource {
 			return new ResponseEntity(HttpStatus.BAD_REQUEST);
 		}
 	}
-	
+
 	@GetMapping("/validateExperience")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
@@ -274,7 +274,7 @@ public class RestAPIResource {
 			return new ResponseEntity(HttpStatus.BAD_REQUEST);
 		}
 	}
-	
+
 	@GetMapping("/validateProject")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
@@ -307,7 +307,7 @@ public class RestAPIResource {
 			return new ResponseEntity(HttpStatus.BAD_REQUEST);
 		}
 	}
-	
+
 	@GetMapping("/validateSkills")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
@@ -480,17 +480,17 @@ public class RestAPIResource {
 				BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(serverFile));
 				stream.write(file.getBytes());
 				stream.close();
-				uploadFileToS3(file, user.getUserId(), "project");
+				uploadFileToS3(file, user.getUserId(), "skills");
 				serverFile.delete();
 			}
 
-			skill.set$class("org.touchstone.basic.addProject");
-			skill.getSkills().set$class("org.touchstone.basic.Project");
+			skill.set$class("org.touchstone.basic.addSkills");
+			skill.getSkills().set$class("org.touchstone.basic.Skills");
 			skill.getSkills().getValidation().set$class("org.touchstone.basic.Validation");
 			skill.setProfile("resource:org.touchstone.basic.Profile#" + user.getProfileId());
 			skill.getSkills().getValidation().setValidationStatus("VALIDATE");
 			skill.getSkills().getValidation().setValidationType("MANUAL");
-
+			skill.getSkills().setExpertiseLevel("BEGINNER");
 			ObjectMapper mappers = new ObjectMapper();
 			String jsonInString = mappers.writeValueAsString(skill);
 			System.out.println(jsonInString);
