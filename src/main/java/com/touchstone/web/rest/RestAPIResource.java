@@ -506,12 +506,14 @@ public class RestAPIResource {
 		}
 	}
 
-	@GetMapping("/getProfile/{profileId}")
+	@GetMapping("/getProfile")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<String> ggetProfile(@PathVariable String profileId) {
+	public ResponseEntity<String> getProfile(Principal principal) {
 		RestTemplate rt = new RestTemplate();
 		rt.getMessageConverters().add(new StringHttpMessageConverter());
+		User user = userService.getUserWithAuthoritiesByLogin(principal.getName()).get();
+		String profileId = user.getProfileId();
 		String uri = new String(Constants.Url + "/Profile/" + profileId);
 		String data = rt.getForObject(uri, String.class);
 
