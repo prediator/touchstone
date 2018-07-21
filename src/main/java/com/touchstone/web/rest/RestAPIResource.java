@@ -45,6 +45,7 @@ import com.touchstone.service.dto.Project;
 import com.touchstone.service.dto.ProjectDTO;
 import com.touchstone.service.dto.SkillDTO;
 import com.touchstone.service.dto.Skills;
+import com.touchstone.service.util.RandomUtil;
 
 /**
  * REST controller for adding certificate, Education, Experience, Project,
@@ -81,7 +82,10 @@ public class RestAPIResource {
 
 			Certificate certificate = jsonParserClient.readValue(certi, Certificate.class);
 			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
+			String[] links = new String[1];
 
+			links[0] = "https://s3.ap-south-1.amazonaws.com/touchstonebackend/" + user.getUserId() + "/certificate/"
+					+ file.getOriginalFilename();
 			String fileName = file.getOriginalFilename();
 			File dir = new File(tmpDir);
 
@@ -103,10 +107,14 @@ public class RestAPIResource {
 			certificate.getCertification().getValidation().setValidationStatus("VALIDATE");
 			certificate.getCertification().getValidation().setValidationType("MANUAL");
 
+			String sl_no = RandomUtil.generateActivationKey();
+			certificate.getCertification().setCertification_slno(sl_no);
+
+			certificate.getCertification().setSupportingDocumentLinks(links);
 			ObjectMapper mappers = new ObjectMapper();
 			String jsonInString = mappers.writeValueAsString(certificate);
 			System.out.println(jsonInString);
-			
+
 			RestTemplate rt = new RestTemplate();
 			rt.getMessageConverters().add(new StringHttpMessageConverter());
 			String uri = new String(Constants.Url + "/addCertification");
@@ -125,20 +133,21 @@ public class RestAPIResource {
 	 *            the certificate data
 	 * @throws JsonProcessingException
 	 */
-	@GetMapping("/validateCertification")
+	@GetMapping("/validateCertification/{slno}")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<String> validateCertification(Principal login) throws JsonProcessingException {
-
+	public ResponseEntity<String> validateCertification(@PathVariable String slno, Principal login)
+			throws JsonProcessingException {
 		try {
 			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
 			Certificate certificate = new Certificate();
 			certificate.set$class("org.touchstone.basic.validateCertification");
 			certificate.setCertification(new Certification());
+			certificate.getCertification().setCertification_slno(slno);
 			certificate.getCertification().set$class("org.touchstone.basic.Certification");
 			certificate.getCertification().setValidation(new CertificateValidation());
 			certificate.getCertification().getValidation().set$class("org.touchstone.basic.Validation");
-			certificate.getCertification().getValidation().setValidationStatus("VALIDATE");
+			certificate.getCertification().getValidation().setValidationStatus("VALIDATED");
 			certificate.getCertification().getValidation().setValidationType("MANUAL");
 			certificate.setProfile("resource:org.touchstone.basic.Profile#" + user.getProfileId());
 			certificate.getCertification().setSupportingDocumentLinks(new String[0]);
@@ -177,6 +186,15 @@ public class RestAPIResource {
 			EducationDTO edu = jsonParserClient.readValue(education, EducationDTO.class);
 			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
 
+			String sl_no = RandomUtil.generateActivationKey();
+			edu.getEducation().setEducation_slno(sl_no);
+
+			String[] links = new String[1];
+
+			links[0] = "https://s3.ap-south-1.amazonaws.com/touchstonebackend/" + user.getUserId() + "/education/"
+					+ file.getOriginalFilename();
+			edu.getEducation().setSupportingDocumentLinks(links);
+
 			String fileName = file.getOriginalFilename();
 			File dir = new File(tmpDir);
 
@@ -213,10 +231,11 @@ public class RestAPIResource {
 		}
 	}
 
-	@GetMapping("/validateEducation")
+	@GetMapping("/validateEducation/{slno}")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<String> validateEducation(Principal login) throws JsonProcessingException {
+	public ResponseEntity<String> validateEducation(@PathVariable String slno, Principal login)
+			throws JsonProcessingException {
 
 		try {
 			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
@@ -226,11 +245,11 @@ public class RestAPIResource {
 			education.getEducation().set$class("org.touchstone.basic.Education");
 			education.getEducation().setValidation(new CertificateValidation());
 			education.getEducation().getValidation().set$class("org.touchstone.basic.Validation");
-			education.getEducation().getValidation().setValidationStatus("VALIDATE");
+			education.getEducation().getValidation().setValidationStatus("VALIDATED");
 			education.getEducation().getValidation().setValidationType("MANUAL");
 			education.setProfile("resource:org.touchstone.basic.Profile#" + user.getProfileId());
 			education.getEducation().setSupportingDocumentLinks(new String[0]);
-
+			education.getEducation().setEducation_slno(slno);
 			ObjectMapper mappers = new ObjectMapper();
 			String jsonInString = mappers.writeValueAsString(education);
 			System.out.println(jsonInString);
@@ -246,10 +265,11 @@ public class RestAPIResource {
 		}
 	}
 
-	@GetMapping("/validateExperience")
+	@GetMapping("/validateExperience/{slno}")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<String> validateExperience(Principal login) throws JsonProcessingException {
+	public ResponseEntity<String> validateExperience(@PathVariable String slno, Principal login)
+			throws JsonProcessingException {
 
 		try {
 			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
@@ -259,11 +279,11 @@ public class RestAPIResource {
 			education.getExperience().set$class("org.touchstone.basic.Experience");
 			education.getExperience().setValidation(new CertificateValidation());
 			education.getExperience().getValidation().set$class("org.touchstone.basic.Validation");
-			education.getExperience().getValidation().setValidationStatus("VALIDATE");
+			education.getExperience().getValidation().setValidationStatus("VALIDATED");
 			education.getExperience().getValidation().setValidationType("MANUAL");
 			education.setProfile("resource:org.touchstone.basic.Profile#" + user.getProfileId());
 			education.getExperience().setSupportingDocumentLinks(new String[0]);
-
+			education.getExperience().setExperience_slno(slno);
 			ObjectMapper mappers = new ObjectMapper();
 			String jsonInString = mappers.writeValueAsString(education);
 			System.out.println(jsonInString);
@@ -279,10 +299,11 @@ public class RestAPIResource {
 		}
 	}
 
-	@GetMapping("/validateProject")
+	@GetMapping("/validateProject/{slno}")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<String> validateProject(Principal login) throws JsonProcessingException {
+	public ResponseEntity<String> validateProject(@PathVariable String slno, Principal login)
+			throws JsonProcessingException {
 
 		try {
 			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
@@ -292,11 +313,11 @@ public class RestAPIResource {
 			education.getProject().set$class("org.touchstone.basic.Project");
 			education.getProject().setValidation(new CertificateValidation());
 			education.getProject().getValidation().set$class("org.touchstone.basic.Validation");
-			education.getProject().getValidation().setValidationStatus("VALIDATE");
+			education.getProject().getValidation().setValidationStatus("VALIDATED");
 			education.getProject().getValidation().setValidationType("MANUAL");
 			education.setProfile("resource:org.touchstone.basic.Profile#" + user.getProfileId());
 			education.getProject().setSupportingDocumentLinks(new String[0]);
-
+			education.getProject().setProject_slno(slno);
 			ObjectMapper mappers = new ObjectMapper();
 			String jsonInString = mappers.writeValueAsString(education);
 			System.out.println(jsonInString);
@@ -312,10 +333,11 @@ public class RestAPIResource {
 		}
 	}
 
-	@GetMapping("/validateSkills")
+	@GetMapping("/validateSkills/{slno}")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<String> validateSkills(Principal login) throws JsonProcessingException {
+	public ResponseEntity<String> validateSkills(@PathVariable String slno, Principal login)
+			throws JsonProcessingException {
 
 		try {
 			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
@@ -325,11 +347,11 @@ public class RestAPIResource {
 			education.getSkills().set$class("org.touchstone.basic.Skills");
 			education.getSkills().setValidation(new CertificateValidation());
 			education.getSkills().getValidation().set$class("org.touchstone.basic.Validation");
-			education.getSkills().getValidation().setValidationStatus("VALIDATE");
+			education.getSkills().getValidation().setValidationStatus("VALIDATED");
 			education.getSkills().getValidation().setValidationType("MANUAL");
 			education.setProfile("resource:org.touchstone.basic.Profile#" + user.getProfileId());
 			education.getSkills().setSupportingDocumentLinks(new String[0]);
-
+			education.getSkills().setSkill_slno(slno);
 			ObjectMapper mappers = new ObjectMapper();
 			String jsonInString = mappers.writeValueAsString(education);
 			System.out.println(jsonInString);
@@ -364,6 +386,12 @@ public class RestAPIResource {
 			ExperienceDTO exp = jsonParserClient.readValue(education, ExperienceDTO.class);
 			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
 
+			String[] links = new String[1];
+
+			links[0] = "https://s3.ap-south-1.amazonaws.com/touchstonebackend/" + user.getUserId() + "/experience/"
+					+ file.getOriginalFilename();
+			exp.getExperience().setSupportingDocumentLinks(links);
+
 			String fileName = file.getOriginalFilename();
 			File dir = new File(tmpDir);
 
@@ -377,6 +405,9 @@ public class RestAPIResource {
 				uploadFileToS3(file, user.getUserId(), "experience");
 				serverFile.delete();
 			}
+
+			String sl_no = RandomUtil.generateActivationKey();
+			exp.getExperience().setExperience_slno(sl_no);
 
 			exp.set$class("org.touchstone.basic.addExperience");
 			exp.getExperience().set$class("org.touchstone.basic.Experience");
@@ -419,6 +450,12 @@ public class RestAPIResource {
 			ProjectDTO project = jsonParserClient.readValue(prj, ProjectDTO.class);
 			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
 
+			String[] links = new String[1];
+
+			links[0] = "https://s3.ap-south-1.amazonaws.com/touchstonebackend/" + user.getUserId() + "/project/"
+					+ file.getOriginalFilename();
+			project.getProject().setSupportingDocumentLinks(links);
+
 			String fileName = file.getOriginalFilename();
 			File dir = new File(tmpDir);
 
@@ -432,6 +469,9 @@ public class RestAPIResource {
 				uploadFileToS3(file, user.getUserId(), "project");
 				serverFile.delete();
 			}
+
+			String sl_no = RandomUtil.generateActivationKey();
+			project.getProject().setProject_slno(sl_no);
 
 			project.set$class("org.touchstone.basic.addProject");
 			project.getProject().set$class("org.touchstone.basic.Project");
@@ -470,9 +510,15 @@ public class RestAPIResource {
 		try {
 
 			ObjectMapper jsonParserClient = new ObjectMapper();
- 
+
 			SkillDTO skill = jsonParserClient.readValue(skil, SkillDTO.class);
 			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
+
+			String[] links = new String[1];
+
+			links[0] = "https://s3.ap-south-1.amazonaws.com/touchstonebackend/" + user.getUserId() + "/skills/"
+					+ file.getOriginalFilename();
+			skill.getSkills().setSupportingDocumentLinks(links);
 
 			String fileName = file.getOriginalFilename();
 			File dir = new File(tmpDir);
@@ -488,8 +534,11 @@ public class RestAPIResource {
 				serverFile.delete();
 			}
 
+			String sl_no = RandomUtil.generateActivationKey();
+			skill.getSkills().setSkill_slno(sl_no);
+
 			skill.set$class("org.touchstone.basic.addSkills");
-			  
+
 			skill.getSkills().set$class("org.touchstone.basic.Skills");
 			skill.getSkills().getValidation().set$class("org.touchstone.basic.Validation");
 			skill.setProfile("resource:org.touchstone.basic.Profile#" + user.getProfileId());
@@ -497,7 +546,7 @@ public class RestAPIResource {
 			skill.getSkills().getValidation().setValidationType("MANUAL");
 			skill.getSkills().setExpertiseLevel("BEGINNER");
 			skill.getSkills().setSupportingDocumentLinks(new String[0]);
-			
+
 			ObjectMapper mappers = new ObjectMapper();
 			String jsonInString = mappers.writeValueAsString(skill);
 			System.out.println(jsonInString);
