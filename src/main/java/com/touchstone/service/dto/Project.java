@@ -7,18 +7,18 @@ import java.util.Arrays;
  */
 public class Project {
 
-	private String $class;
+	private String $class="";
 
-	private String project_slno;
+	private String project_slno="";
 
-	private String from;
+	private String from="";
 
-	private String to;
+	private String to="";
 
-	private String position;
-	private String organizationName;
+	private String position="";
+	private String organizationName="";
 	private String[] skills;
-	private String jobRole;
+	private String jobRole="";
 	private String[] supportingDocumentLinks;
 
 	private CertificateValidation validation;

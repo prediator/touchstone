@@ -470,7 +470,7 @@ public class RestAPIResource {
 		try {
 
 			ObjectMapper jsonParserClient = new ObjectMapper();
-
+ 
 			SkillDTO skill = jsonParserClient.readValue(skil, SkillDTO.class);
 			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
 
@@ -489,12 +489,15 @@ public class RestAPIResource {
 			}
 
 			skill.set$class("org.touchstone.basic.addSkills");
+			  
 			skill.getSkills().set$class("org.touchstone.basic.Skills");
 			skill.getSkills().getValidation().set$class("org.touchstone.basic.Validation");
 			skill.setProfile("resource:org.touchstone.basic.Profile#" + user.getProfileId());
 			skill.getSkills().getValidation().setValidationStatus("VALIDATE");
 			skill.getSkills().getValidation().setValidationType("MANUAL");
 			skill.getSkills().setExpertiseLevel("BEGINNER");
+			skill.getSkills().setSupportingDocumentLinks(new String[0]);
+			
 			ObjectMapper mappers = new ObjectMapper();
 			String jsonInString = mappers.writeValueAsString(skill);
 			System.out.println(jsonInString);
