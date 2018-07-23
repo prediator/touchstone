@@ -31,6 +31,7 @@ import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.io.Files;
 import com.touchstone.config.Constants;
 import com.touchstone.domain.User;
 import com.touchstone.service.UserService;
@@ -46,6 +47,8 @@ import com.touchstone.service.dto.ProjectDTO;
 import com.touchstone.service.dto.SkillDTO;
 import com.touchstone.service.dto.Skills;
 import com.touchstone.service.util.RandomUtil;
+
+import afu.org.checkerframework.framework.qual.FieldIsExpression;
 
 /**
  * REST controller for adding certificate, Education, Experience, Project,
@@ -75,7 +78,7 @@ public class RestAPIResource {
 	@PostMapping("/addCertification")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<String> addCertification(@RequestParam("file") MultipartFile file,
+	public ResponseEntity<String> addCertification(@RequestParam(name = "file",required=false) MultipartFile file,
 			@RequestParam("certificate") String certi, Principal login) throws JsonProcessingException {
 		try {
 			ObjectMapper jsonParserClient = new ObjectMapper();
@@ -177,7 +180,7 @@ public class RestAPIResource {
 	@PostMapping("/addEducation")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<String> addEducation(@RequestParam("file") MultipartFile file,
+	public ResponseEntity<String> addEducation(@RequestParam(name="file[]",required=false) MultipartFile[] files,
 			@RequestParam("education") String education, Principal login) throws JsonProcessingException {
 		try {
 
@@ -188,26 +191,51 @@ public class RestAPIResource {
 
 			String sl_no = RandomUtil.generateActivationKey();
 			edu.getEducation().setEducation_slno(sl_no);
-
-			String[] links = new String[1];
-
-			links[0] = "https://s3.ap-south-1.amazonaws.com/touchstonebackend/" + user.getUserId() + "/education/"
-					+ file.getOriginalFilename();
-			edu.getEducation().setSupportingDocumentLinks(links);
-
-			String fileName = file.getOriginalFilename();
-			File dir = new File(tmpDir);
-
-			dir.mkdirs();
-			if (dir.isDirectory()) {
-				File serverFile = new File(dir, fileName);
-				serverFile.setReadable(true, false);
-				BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(serverFile));
-				stream.write(file.getBytes());
-				stream.close();
-				uploadFileToS3(file, user.getUserId(), "education");
-				serverFile.delete();
+			
+			if(files != null && files.length>0) {
+				String[] links = new String[files.length];
+				String fileName =null;
+				File dir = new File(tmpDir);
+				dir.mkdirs();
+				for(int i=0;i<files.length;i++) {
+					links[i] = "https://s3.ap-south-1.amazonaws.com/touchstonebackend/" + user.getUserId() + "/education/"+ files[i].getOriginalFilename();
+					 fileName = files[0].getOriginalFilename();
+					 if (dir.isDirectory()) {
+							File serverFile = new File(dir, fileName);
+							serverFile.setReadable(true, false);
+							BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(serverFile));
+							stream.write(files[0].getBytes());
+							stream.close();
+							uploadFileToS3(files[0], user.getUserId(), "education");
+							serverFile.delete();
+						}
+				
+				}
+				edu.getEducation().setSupportingDocumentLinks(links);
+			}else {
+				edu.getEducation().setSupportingDocumentLinks(new String[0]);
 			}
+			
+			
+
+//			String[] links = new String[1];
+//			links[0] = "https://s3.ap-south-1.amazonaws.com/touchstonebackend/" + user.getUserId() + "/education/"
+//					+ files[0].getOriginalFilename();
+//			edu.getEducation().setSupportingDocumentLinks(links);
+//
+//			String fileName = files[0].getOriginalFilename();
+//			File dir = new File(tmpDir);
+//
+//			dir.mkdirs();
+//			if (dir.isDirectory()) {
+//				File serverFile = new File(dir, fileName);
+//				serverFile.setReadable(true, false);
+//				BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(serverFile));
+//				stream.write(file[0].getBytes());
+//				stream.close();
+//				uploadFileToS3(file[0], user.getUserId(), "education");
+//				serverFile.delete();
+//			}
 
 			edu.set$class("org.touchstone.basic.addEducation");
 			edu.getEducation().set$class("org.touchstone.basic.Education");
@@ -377,7 +405,7 @@ public class RestAPIResource {
 	@PostMapping("/addExperience")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<String> addExperience(@RequestParam("file") MultipartFile file,
+	public ResponseEntity<String> addExperience(@RequestParam(name="file",required=false) MultipartFile file,
 			@RequestParam("experience") String education, Principal login) throws JsonProcessingException {
 		try {
 
@@ -441,7 +469,7 @@ public class RestAPIResource {
 	@PostMapping("/addProject")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<String> addProject(@RequestParam("file") MultipartFile file,
+	public ResponseEntity<String> addProject(@RequestParam(name="file",required=false) MultipartFile file,
 			@RequestParam("project") String prj, Principal login) throws JsonProcessingException {
 		try {
 
@@ -505,7 +533,7 @@ public class RestAPIResource {
 	@PostMapping("/addSkills")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<String> addSkill(@RequestParam("file") MultipartFile file,
+	public ResponseEntity<String> addSkill(@RequestParam(name="file",required=false) MultipartFile file,
 			@RequestParam("skills") String skil, Principal login) throws JsonProcessingException {
 		try {
 
