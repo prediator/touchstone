@@ -8,8 +8,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.validation.Valid;
-
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.slf4j.Logger;
@@ -59,9 +57,7 @@ import com.touchstone.service.dto.Update;
 import com.touchstone.service.dto.Validation;
 import com.touchstone.service.util.RandomUtil;
 import com.touchstone.web.rest.errors.EmailAlreadyUsedException;
-import com.touchstone.web.rest.errors.InvalidPasswordException;
 import com.touchstone.web.rest.util.GenerateOTP;
-import com.touchstone.web.rest.vm.ManagedUserVM;
 
 import ma.glasnost.orika.MapperFacade;
 import ma.glasnost.orika.MapperFactory;

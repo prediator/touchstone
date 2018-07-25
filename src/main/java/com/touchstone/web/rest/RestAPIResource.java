@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.security.Principal;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -13,6 +14,7 @@ import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -31,13 +33,14 @@ import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.io.Files;
 import com.touchstone.config.Constants;
 import com.touchstone.domain.User;
+import com.touchstone.service.MailService;
 import com.touchstone.service.UserService;
 import com.touchstone.service.dto.Certificate;
 import com.touchstone.service.dto.CertificateValidation;
 import com.touchstone.service.dto.Certification;
+import com.touchstone.service.dto.Consumer;
 import com.touchstone.service.dto.Education;
 import com.touchstone.service.dto.EducationDTO;
 import com.touchstone.service.dto.Experience;
@@ -46,9 +49,10 @@ import com.touchstone.service.dto.Project;
 import com.touchstone.service.dto.ProjectDTO;
 import com.touchstone.service.dto.SkillDTO;
 import com.touchstone.service.dto.Skills;
+import com.touchstone.service.dto.Validation;
+import com.touchstone.service.dto.ValidationEmail;
 import com.touchstone.service.util.RandomUtil;
-
-import afu.org.checkerframework.framework.qual.FieldIsExpression;
+import com.touchstone.web.rest.util.GenerateOTP;
 
 /**
  * REST controller for adding certificate, Education, Experience, Project,
@@ -63,22 +67,24 @@ public class RestAPIResource {
 	// private final String tmpDir =
 	// "C:\\Users\\Kadri\\Desktop\\Touch\\build\\libs\\";
 	private final String tmpDir = "/tmp/";
+	private GenerateOTP generateOtp = new GenerateOTP();
+	private final MailService mailService;
 
-	public RestAPIResource(UserService userService) {
+	public RestAPIResource(UserService userService, MailService mailService) {
 		this.userService = userService;
+		this.mailService = mailService;
 	}
 
 	/**
 	 * POST /addCertification : Add certification.
 	 *
-	 * @param Certificate
-	 *            the certificate data
+	 * @param Certificate the certificate data
 	 * @throws JsonProcessingException
 	 */
 	@PostMapping("/addCertification")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<String> addCertification(@RequestParam(name = "file",required=false) MultipartFile file,
+	public ResponseEntity<String> addCertification(@RequestParam(name = "file", required = false) MultipartFile file,
 			@RequestParam("certificate") String certi, Principal login) throws JsonProcessingException {
 		try {
 			ObjectMapper jsonParserClient = new ObjectMapper();
@@ -132,8 +138,7 @@ public class RestAPIResource {
 	/**
 	 * POST /addCertification : Add certification.
 	 *
-	 * @param Certificate
-	 *            the certificate data
+	 * @param Certificate the certificate data
 	 * @throws JsonProcessingException
 	 */
 	@GetMapping("/validateCertification/{slno}")
@@ -170,17 +175,134 @@ public class RestAPIResource {
 		}
 	}
 
+	@PostMapping("/validate")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public void validateCertification(@RequestBody ValidationEmail validEmail, Principal login)
+			throws JsonProcessingException {
+
+		User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
+		// education.experience,certificate,skill,project
+		if (StringUtils.contains(validEmail.getType(), "education")) {
+			EducationDTO education = new EducationDTO();
+			education.set$class("org.touchstone.basic.validateEducation");
+			education.setEducation(new Education());
+			education.getEducation().set$class("org.touchstone.basic.Education");
+			education.getEducation().setValidation(new CertificateValidation());
+			education.getEducation().getValidation().set$class("org.touchstone.basic.Validation");
+			education.getEducation().getValidation().setValidationStatus("IN_PROGRESS");
+			education.getEducation().getValidation().setValidationType("MANUAL");
+			education.setProfile("resource:org.touchstone.basic.Profile#" + user.getProfileId());
+			education.getEducation().setSupportingDocumentLinks(new String[0]);
+			education.getEducation().setEducation_slno(validEmail.getSlno());
+			ObjectMapper mappers = new ObjectMapper();
+			String jsonInString = mappers.writeValueAsString(education);
+			System.out.println(jsonInString);
+
+			RestTemplate rt = new RestTemplate();
+			rt.getMessageConverters().add(new StringHttpMessageConverter());
+			String uri = new String(Constants.Url + "/validateEducation");
+			rt.postForObject(uri, education, EducationDTO.class);
+		} else if (StringUtils.contains(validEmail.getType(), "experience")) {
+
+			ExperienceDTO education = new ExperienceDTO();
+			education.set$class("org.touchstone.basic.validateExperience");
+			education.setExperience(new Experience());
+			education.getExperience().set$class("org.touchstone.basic.Experience");
+			education.getExperience().setValidation(new CertificateValidation());
+			education.getExperience().getValidation().set$class("org.touchstone.basic.Validation");
+			education.getExperience().getValidation().setValidationStatus("IN_PROGRESS");
+			education.getExperience().getValidation().setValidationType("MANUAL");
+			education.setProfile("resource:org.touchstone.basic.Profile#" + user.getProfileId());
+			education.getExperience().setSupportingDocumentLinks(new String[0]);
+			education.getExperience().setExperience_slno(validEmail.getSlno());
+			ObjectMapper mappers = new ObjectMapper();
+			String jsonInString = mappers.writeValueAsString(education);
+			System.out.println(jsonInString);
+
+			RestTemplate rt = new RestTemplate();
+			rt.getMessageConverters().add(new StringHttpMessageConverter());
+			String uri = new String(Constants.Url + "/validateExperience");
+			rt.postForObject(uri, education, ExperienceDTO.class);
+
+		} else if (StringUtils.contains(validEmail.getType(), "certificate")) {
+			Certificate certificate = new Certificate();
+			certificate.set$class("org.touchstone.basic.validateCertification");
+			certificate.setCertification(new Certification());
+			certificate.getCertification().setCertification_slno(validEmail.getSlno());
+			certificate.getCertification().set$class("org.touchstone.basic.Certification");
+			certificate.getCertification().setValidation(new CertificateValidation());
+			certificate.getCertification().getValidation().set$class("org.touchstone.basic.Validation");
+			certificate.getCertification().getValidation().setValidationStatus("IN_PROGRESS");
+			certificate.getCertification().getValidation().setValidationType("MANUAL");
+			certificate.setProfile("resource:org.touchstone.basic.Profile#" + user.getProfileId());
+			certificate.getCertification().setSupportingDocumentLinks(new String[0]);
+
+			ObjectMapper mappers = new ObjectMapper();
+			String jsonInString = mappers.writeValueAsString(certificate);
+			System.out.println(jsonInString);
+
+			RestTemplate rt = new RestTemplate();
+			rt.getMessageConverters().add(new StringHttpMessageConverter());
+			String uri = new String(Constants.Url + "/validateCertification");
+			rt.postForObject(uri, certificate, Certificate.class);
+		} else if (StringUtils.contains(validEmail.getType(), "skill")) {
+			SkillDTO education = new SkillDTO();
+			education.set$class("org.touchstone.basic.validateSkills");
+			education.setSkills(new Skills());
+			education.getSkills().set$class("org.touchstone.basic.Skills");
+			education.getSkills().setValidation(new CertificateValidation());
+			education.getSkills().getValidation().set$class("org.touchstone.basic.Validation");
+			education.getSkills().getValidation().setValidationStatus("IN_PROGRESS");
+			education.getSkills().getValidation().setValidationType("MANUAL");
+			education.setProfile("resource:org.touchstone.basic.Profile#" + user.getProfileId());
+			education.getSkills().setSupportingDocumentLinks(new String[0]);
+			education.getSkills().setSkill_slno(validEmail.getSlno());
+			ObjectMapper mappers = new ObjectMapper();
+			String jsonInString = mappers.writeValueAsString(education);
+			System.out.println(jsonInString);
+
+			RestTemplate rt = new RestTemplate();
+			rt.getMessageConverters().add(new StringHttpMessageConverter());
+			String uri = new String(Constants.Url + "/validateSkills");
+			rt.postForObject(uri, education, SkillDTO.class);
+		} else {
+			ProjectDTO education = new ProjectDTO();
+			education.set$class("org.touchstone.basic.validateProject");
+			education.setProject(new Project());
+			education.getProject().set$class("org.touchstone.basic.Project");
+			education.getProject().setValidation(new CertificateValidation());
+			education.getProject().getValidation().set$class("org.touchstone.basic.Validation");
+			education.getProject().getValidation().setValidationStatus("IN_PROGRESS");
+			education.getProject().getValidation().setValidationType("MANUAL");
+			education.setProfile("resource:org.touchstone.basic.Profile#" + user.getProfileId());
+			education.getProject().setSupportingDocumentLinks(new String[0]);
+			education.getProject().setProject_slno(validEmail.getSlno());
+			ObjectMapper mappers = new ObjectMapper();
+			String jsonInString = mappers.writeValueAsString(education);
+			System.out.println(jsonInString);
+
+			RestTemplate rt = new RestTemplate();
+			rt.getMessageConverters().add(new StringHttpMessageConverter());
+			String uri = new String(Constants.Url + "/validateProject");
+			rt.postForObject(uri, education, ProjectDTO.class);
+		}
+
+		String message = "Dear " + validEmail.getValidationBy() + " " + validEmail.getDescription()
+				+ " http://ridgelift.io:8080/api/validateCertification/" + generateOtp.storeOTP(validEmail.getEmail());
+		mailService.sendEmail(validEmail.getEmail(), "Account Created", message, false, true);
+	}
+
 	/**
 	 * POST /addEducation : add education.
 	 *
-	 * @param EducationDTO
-	 *            the education details
+	 * @param EducationDTO the education details
 	 * @throws JsonProcessingException
 	 */
 	@PostMapping("/addEducation")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<String> addEducation(@RequestParam(name="file[]",required=false) MultipartFile[] files,
+	public ResponseEntity<String> addEducation(@RequestParam(name = "file[]", required = false) MultipartFile[] files,
 			@RequestParam("education") String education, Principal login) throws JsonProcessingException {
 		try {
 
@@ -191,32 +313,31 @@ public class RestAPIResource {
 
 			String sl_no = RandomUtil.generateActivationKey();
 			edu.getEducation().setEducation_slno(sl_no);
-			
-			if(files != null && files.length>0) {
+
+			if (files != null && files.length > 0) {
 				String[] links = new String[files.length];
-				String fileName =null;
+				String fileName = null;
 				File dir = new File(tmpDir);
 				dir.mkdirs();
-				for(int i=0;i<files.length;i++) {
-					links[i] = "https://s3.ap-south-1.amazonaws.com/touchstonebackend/" + user.getUserId() + "/education/"+ files[i].getOriginalFilename();
-					 fileName = files[0].getOriginalFilename();
-					 if (dir.isDirectory()) {
-							File serverFile = new File(dir, fileName);
-							serverFile.setReadable(true, false);
-							BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(serverFile));
-							stream.write(files[0].getBytes());
-							stream.close();
-							uploadFileToS3(files[0], user.getUserId(), "education");
-							serverFile.delete();
-						}
-				
+				for (int i = 0; i < files.length; i++) {
+					links[i] = "https://s3.ap-south-1.amazonaws.com/touchstonebackend/" + user.getUserId()
+							+ "/education/" + files[i].getOriginalFilename();
+					fileName = files[0].getOriginalFilename();
+					if (dir.isDirectory()) {
+						File serverFile = new File(dir, fileName);
+						serverFile.setReadable(true, false);
+						BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(serverFile));
+						stream.write(files[0].getBytes());
+						stream.close();
+						uploadFileToS3(files[0], user.getUserId(), "education");
+						serverFile.delete();
+					}
+
 				}
 				edu.getEducation().setSupportingDocumentLinks(links);
-			}else {
+			} else {
 				edu.getEducation().setSupportingDocumentLinks(new String[0]);
 			}
-			
-			
 
 //			String[] links = new String[1];
 //			links[0] = "https://s3.ap-south-1.amazonaws.com/touchstonebackend/" + user.getUserId() + "/education/"
@@ -285,7 +406,7 @@ public class RestAPIResource {
 			RestTemplate rt = new RestTemplate();
 			rt.getMessageConverters().add(new StringHttpMessageConverter());
 			String uri = new String(Constants.Url + "/validateEducation");
-			rt.postForObject(uri, education, Certificate.class);
+			rt.postForObject(uri, education, EducationDTO.class);
 			return new ResponseEntity(HttpStatus.CREATED);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -319,7 +440,7 @@ public class RestAPIResource {
 			RestTemplate rt = new RestTemplate();
 			rt.getMessageConverters().add(new StringHttpMessageConverter());
 			String uri = new String(Constants.Url + "/validateExperience");
-			rt.postForObject(uri, education, Certificate.class);
+			rt.postForObject(uri, education, ExperienceDTO.class);
 			return new ResponseEntity(HttpStatus.CREATED);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -353,7 +474,7 @@ public class RestAPIResource {
 			RestTemplate rt = new RestTemplate();
 			rt.getMessageConverters().add(new StringHttpMessageConverter());
 			String uri = new String(Constants.Url + "/validateProject");
-			rt.postForObject(uri, education, Certificate.class);
+			rt.postForObject(uri, education, ProjectDTO.class);
 			return new ResponseEntity(HttpStatus.CREATED);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -387,7 +508,7 @@ public class RestAPIResource {
 			RestTemplate rt = new RestTemplate();
 			rt.getMessageConverters().add(new StringHttpMessageConverter());
 			String uri = new String(Constants.Url + "/validateSkills");
-			rt.postForObject(uri, education, Certificate.class);
+			rt.postForObject(uri, education, SkillDTO.class);
 			return new ResponseEntity(HttpStatus.CREATED);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -398,14 +519,13 @@ public class RestAPIResource {
 	/**
 	 * POST /addExperience : add experience.
 	 *
-	 * @param ExperienceDTO
-	 *            the experience details
+	 * @param ExperienceDTO the experience details
 	 * @throws JsonProcessingException
 	 */
 	@PostMapping("/addExperience")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<String> addExperience(@RequestParam(name="file",required=false) MultipartFile file,
+	public ResponseEntity<String> addExperience(@RequestParam(name = "file", required = false) MultipartFile file,
 			@RequestParam("experience") String education, Principal login) throws JsonProcessingException {
 		try {
 
@@ -462,14 +582,13 @@ public class RestAPIResource {
 	/**
 	 * POST /addProject : add Project.
 	 *
-	 * @param ProjectDTO
-	 *            the project details
+	 * @param ProjectDTO the project details
 	 * @throws JsonProcessingException
 	 */
 	@PostMapping("/addProject")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<String> addProject(@RequestParam(name="file",required=false) MultipartFile file,
+	public ResponseEntity<String> addProject(@RequestParam(name = "file", required = false) MultipartFile file,
 			@RequestParam("project") String prj, Principal login) throws JsonProcessingException {
 		try {
 
@@ -526,14 +645,13 @@ public class RestAPIResource {
 	/**
 	 * POST /addSkills : add Skills.
 	 *
-	 * @param ProjectDTO
-	 *            the project details
+	 * @param ProjectDTO the project details
 	 * @throws JsonProcessingException
 	 */
 	@PostMapping("/addSkills")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<String> addSkill(@RequestParam(name="file",required=false) MultipartFile file,
+	public ResponseEntity<String> addSkill(@RequestParam(name = "file", required = false) MultipartFile file,
 			@RequestParam("skills") String skil, Principal login) throws JsonProcessingException {
 		try {
 
