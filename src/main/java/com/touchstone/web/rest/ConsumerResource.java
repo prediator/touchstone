@@ -631,7 +631,7 @@ public class ConsumerResource {
 	public void uploadFileToS3(MultipartFile file, String id) {
 		AWSCredentials credentials = null;
 		try {
-			credentials = new BasicAWSCredentials("AKIAJ3V3PHYVKBNK3KEA", "cv7xkpJkTY4oVRrwuL7EKHnkrc3NUlDzV60rnduy");
+			credentials = new BasicAWSCredentials("AKIAJJ2K72I5Y3U5F4WQ", "JmNXnTymXEUTMFnroK5mSzMrt79Q6jzveXqAfhbt");
 		} catch (Exception e) {
 			throw new AmazonClientException("Cannot load the credentials from the credential profiles file. "
 					+ "Please make sure that your credentials file is at the correct "

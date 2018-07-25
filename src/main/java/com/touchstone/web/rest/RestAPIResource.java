@@ -4,6 +4,8 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.security.Principal;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -141,37 +143,134 @@ public class RestAPIResource {
 	 * @param Certificate the certificate data
 	 * @throws JsonProcessingException
 	 */
-	@GetMapping("/validateCertification/{slno}")
+	@GetMapping("/validateCertification/{otp}/{slno}/{uname}/{email}/{type}")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<String> validateCertification(@PathVariable String slno, Principal login)
-			throws JsonProcessingException {
+	public ResponseEntity<Map<String, String>> validateCertification(@PathVariable Integer otp,
+			@PathVariable String slno, @PathVariable String uname, @PathVariable String email,
+			@PathVariable String type) throws JsonProcessingException {
 		try {
-			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
-			Certificate certificate = new Certificate();
-			certificate.set$class("org.touchstone.basic.validateCertification");
-			certificate.setCertification(new Certification());
-			certificate.getCertification().setCertification_slno(slno);
-			certificate.getCertification().set$class("org.touchstone.basic.Certification");
-			certificate.getCertification().setValidation(new CertificateValidation());
-			certificate.getCertification().getValidation().set$class("org.touchstone.basic.Validation");
-			certificate.getCertification().getValidation().setValidationStatus("VALIDATED");
-			certificate.getCertification().getValidation().setValidationType("MANUAL");
-			certificate.setProfile("resource:org.touchstone.basic.Profile#" + user.getProfileId());
-			certificate.getCertification().setSupportingDocumentLinks(new String[0]);
+			User user = userService.getUserWithAuthoritiesByLogin(uname).get();
 
-			ObjectMapper mappers = new ObjectMapper();
-			String jsonInString = mappers.writeValueAsString(certificate);
-			System.out.println(jsonInString);
+			if (generateOtp.checkOTP(email, otp) == 1) {
 
-			RestTemplate rt = new RestTemplate();
-			rt.getMessageConverters().add(new StringHttpMessageConverter());
-			String uri = new String(Constants.Url + "/validateCertification");
-			rt.postForObject(uri, certificate, Certificate.class);
-			return new ResponseEntity(HttpStatus.CREATED);
+				if (StringUtils.contains(type, "education")) {
+					EducationDTO education = new EducationDTO();
+					education.set$class("org.touchstone.basic.validateEducation");
+					education.setEducation(new Education());
+					education.getEducation().set$class("org.touchstone.basic.Education");
+					education.getEducation().setValidation(new CertificateValidation());
+					education.getEducation().getValidation().set$class("org.touchstone.basic.Validation");
+					education.getEducation().getValidation().setValidationStatus("VALIDATED");
+					education.getEducation().getValidation().setValidationType("MANUAL");
+					education.setProfile("resource:org.touchstone.basic.Profile#" + user.getProfileId());
+					education.getEducation().setSupportingDocumentLinks(new String[0]);
+					education.getEducation().setEducation_slno(slno);
+					ObjectMapper mappers = new ObjectMapper();
+					String jsonInString = mappers.writeValueAsString(education);
+					System.out.println(jsonInString);
+
+					RestTemplate rt = new RestTemplate();
+					rt.getMessageConverters().add(new StringHttpMessageConverter());
+					String uri = new String(Constants.Url + "/validateEducation");
+					rt.postForObject(uri, education, EducationDTO.class);
+				} else if (StringUtils.contains(type, "experience")) {
+
+					ExperienceDTO education = new ExperienceDTO();
+					education.set$class("org.touchstone.basic.validateExperience");
+					education.setExperience(new Experience());
+					education.getExperience().set$class("org.touchstone.basic.Experience");
+					education.getExperience().setValidation(new CertificateValidation());
+					education.getExperience().getValidation().set$class("org.touchstone.basic.Validation");
+					education.getExperience().getValidation().setValidationStatus("VALIDATED");
+					education.getExperience().getValidation().setValidationType("MANUAL");
+					education.setProfile("resource:org.touchstone.basic.Profile#" + user.getProfileId());
+					education.getExperience().setSupportingDocumentLinks(new String[0]);
+					education.getExperience().setExperience_slno(slno);
+					ObjectMapper mappers = new ObjectMapper();
+					String jsonInString = mappers.writeValueAsString(education);
+					System.out.println(jsonInString);
+
+					RestTemplate rt = new RestTemplate();
+					rt.getMessageConverters().add(new StringHttpMessageConverter());
+					String uri = new String(Constants.Url + "/validateExperience");
+					rt.postForObject(uri, education, ExperienceDTO.class);
+
+				} else if (StringUtils.contains(type, "certificate")) {
+					Certificate certificate = new Certificate();
+					certificate.set$class("org.touchstone.basic.validateCertification");
+					certificate.setCertification(new Certification());
+					certificate.getCertification().setCertification_slno(slno);
+					certificate.getCertification().set$class("org.touchstone.basic.Certification");
+					certificate.getCertification().setValidation(new CertificateValidation());
+					certificate.getCertification().getValidation().set$class("org.touchstone.basic.Validation");
+					certificate.getCertification().getValidation().setValidationStatus("VALIDATED");
+					certificate.getCertification().getValidation().setValidationType("MANUAL");
+					certificate.setProfile("resource:org.touchstone.basic.Profile#" + user.getProfileId());
+					certificate.getCertification().setSupportingDocumentLinks(new String[0]);
+
+					ObjectMapper mappers = new ObjectMapper();
+					String jsonInString = mappers.writeValueAsString(certificate);
+					System.out.println(jsonInString);
+
+					RestTemplate rt = new RestTemplate();
+					rt.getMessageConverters().add(new StringHttpMessageConverter());
+					String uri = new String(Constants.Url + "/validateCertification");
+					rt.postForObject(uri, certificate, Certificate.class);
+				} else if (StringUtils.contains(type, "skill")) {
+					SkillDTO education = new SkillDTO();
+					education.set$class("org.touchstone.basic.validateSkills");
+					education.setSkills(new Skills());
+					education.getSkills().set$class("org.touchstone.basic.Skills");
+					education.getSkills().setValidation(new CertificateValidation());
+					education.getSkills().getValidation().set$class("org.touchstone.basic.Validation");
+					education.getSkills().getValidation().setValidationStatus("VALIDATED");
+					education.getSkills().getValidation().setValidationType("MANUAL");
+					education.setProfile("resource:org.touchstone.basic.Profile#" + user.getProfileId());
+					education.getSkills().setSupportingDocumentLinks(new String[0]);
+					education.getSkills().setSkill_slno(slno);
+					ObjectMapper mappers = new ObjectMapper();
+					String jsonInString = mappers.writeValueAsString(education);
+					System.out.println(jsonInString);
+
+					RestTemplate rt = new RestTemplate();
+					rt.getMessageConverters().add(new StringHttpMessageConverter());
+					String uri = new String(Constants.Url + "/validateSkills");
+					rt.postForObject(uri, education, SkillDTO.class);
+				} else {
+					ProjectDTO education = new ProjectDTO();
+					education.set$class("org.touchstone.basic.validateProject");
+					education.setProject(new Project());
+					education.getProject().set$class("org.touchstone.basic.Project");
+					education.getProject().setValidation(new CertificateValidation());
+					education.getProject().getValidation().set$class("org.touchstone.basic.Validation");
+					education.getProject().getValidation().setValidationStatus("VALIDATED");
+					education.getProject().getValidation().setValidationType("MANUAL");
+					education.setProfile("resource:org.touchstone.basic.Profile#" + user.getProfileId());
+					education.getProject().setSupportingDocumentLinks(new String[0]);
+					education.getProject().setProject_slno(slno);
+					ObjectMapper mappers = new ObjectMapper();
+					String jsonInString = mappers.writeValueAsString(education);
+					System.out.println(jsonInString);
+
+					RestTemplate rt = new RestTemplate();
+					rt.getMessageConverters().add(new StringHttpMessageConverter());
+					String uri = new String(Constants.Url + "/validateProject");
+					rt.postForObject(uri, education, ProjectDTO.class);
+				}
+
+				generateOtp.removeOtp(email);
+
+				Map<String, String> data = new HashMap<>();
+				data.put("status", "success");
+				return new ResponseEntity<Map<String, String>>(data, HttpStatus.ACCEPTED);
+			} else {
+				return new ResponseEntity<Map<String, String>>(HttpStatus.UNAUTHORIZED);
+			}
+
 		} catch (Exception e) {
 			e.printStackTrace();
-			return new ResponseEntity(HttpStatus.BAD_REQUEST);
+			return new ResponseEntity<Map<String, String>>(HttpStatus.UNAUTHORIZED);
 		}
 	}
 
@@ -288,9 +387,13 @@ public class RestAPIResource {
 			rt.postForObject(uri, education, ProjectDTO.class);
 		}
 
+		// {otp}/{slno}/{uname}/{email}/{type}
+
 		String message = "Dear " + validEmail.getValidationBy() + " " + validEmail.getDescription()
-				+ " http://ridgelift.io:8080/api/validateCertification/" + generateOtp.storeOTP(validEmail.getEmail());
-		mailService.sendEmail(validEmail.getEmail(), "Account Created", message, false, true);
+				+ " http://ridgelift.io:8080/api/validateCertification/" + generateOtp.storeOTP(validEmail.getEmail())
+				+ "/" + validEmail.getSlno() + "/" + user.getLogin() + "/" + validEmail.getEmail() + "/"
+				+ validEmail.getType();
+		mailService.sendEmail(validEmail.getEmail(), "validation", message, false, true);
 	}
 
 	/**
@@ -726,7 +829,7 @@ public class RestAPIResource {
 	public void uploadFileToS3(MultipartFile file, String id, String type) {
 		AWSCredentials credentials = null;
 		try {
-			credentials = new BasicAWSCredentials("AKIAJTTKGKU3EU5OH6OA", "J9kwzybAitcVBROx4HogeNXSsYiNy3j7vOMvZPPI");
+			credentials = new BasicAWSCredentials("AKIAJJ2K72I5Y3U5F4WQ", "JmNXnTymXEUTMFnroK5mSzMrt79Q6jzveXqAfhbt");
 		} catch (Exception e) {
 			throw new AmazonClientException("Cannot load the credentials from the credential profiles file. "
 					+ "Please make sure that your credentials file is at the correct "
