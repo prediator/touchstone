@@ -98,6 +98,8 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
             .antMatchers("/api/register").permitAll()
             .antMatchers("/api/getProfile/**").permitAll()
             .antMatchers("/api/validateCertification/**").permitAll()
+            .antMatchers("/api/poc/**").permitAll()
+            .antMatchers("/api/poc").permitAll()
             .antMatchers("/api/validateCertification").permitAll()
             .antMatchers("/api/Consumer").permitAll()
             .antMatchers("/api/addCertification").permitAll()
