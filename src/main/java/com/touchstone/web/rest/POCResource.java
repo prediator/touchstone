@@ -140,6 +140,7 @@ public class POCResource {
 			throws IOException {
 
 		// "74109955991806253176"
+		System.out.println("--"+name.getName());
 		User user = userService.getUserWithAuthoritiesByLogin(name.getName()).get();
 
 		try {
@@ -147,7 +148,7 @@ public class POCResource {
 				S3Object object = s3client.getObject(bucketName, download.getPath() + "/" + download.getFilename());
 				S3ObjectInputStream s3is = object.getObjectContent();
 
-				return ResponseEntity.ok().contentType(org.springframework.http.MediaType.APPLICATION_PDF)
+				return ResponseEntity.ok().contentType(org.springframework.http.MediaType.ALL)
 						.cacheControl(CacheControl.noCache())
 						.header("Content-Disposition", "attachment; filename=" + download.getFilename())
 						.body(new InputStreamResource(s3is));

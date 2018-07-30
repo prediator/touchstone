@@ -276,6 +276,10 @@ public class UserService {
     public Optional<User> getUserWithAuthoritiesByLogin(String login) {
         return userRepository.findOneByLogin(login);
     }
+    
+    public Optional<User> getUserWithAuthoritiesByEmailId(String login) {
+        return userRepository.findOneByEmailIgnoreCase(login);
+    }
 
     public Optional<User> getUserWithAuthorities(String id) {
         return Optional.ofNullable(userRepository.findOne(id));
