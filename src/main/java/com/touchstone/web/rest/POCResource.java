@@ -18,8 +18,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.CacheControl;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.FileCopyUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -140,22 +143,30 @@ public class POCResource {
 	@PostMapping("/poc")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<InputStreamResource> download(@RequestBody Download download, Principal name)
+	public ResponseEntity<?> download(@RequestBody Download download, Principal name)
 			throws IOException {
 
 		// "74109955991806253176"
 		System.out.println("--"+name.getName());
 		User user = userService.getUserWithAuthoritiesByLogin(name.getName()).get();
-
+		byte[] content = null;
 		try {
 			if (StringUtils.equals(user.getUserId(), download.getPath())) {
 				S3Object object = s3client.getObject(bucketName, download.getPath() + "/" + download.getFilename());
 				S3ObjectInputStream s3is = object.getObjectContent();
 
-				return ResponseEntity.ok().contentType(org.springframework.http.MediaType.ALL)
-						.cacheControl(CacheControl.noCache())
-						.header("Content-Disposition", "attachment; filename=" + download.getFilename())
-						.body(new InputStreamResource(s3is));
+				content = FileCopyUtils.copyToByteArray(s3is);
+				HttpHeaders headers = new HttpHeaders();
+				 headers.setContentType(MediaType.parseMediaType(object.getObjectMetadata().getContentType()));
+				  
+//				return ResponseEntity.ok()
+//						.cacheControl(CacheControl.noCache())
+//						.header("Content-Disposition", "attachment; filename=" + download.getFilename())
+//						.contentLength(object.getObjectMetadata().getContentLength())
+//						
+//						.body(new InputStreamResource(s3is));
+//				
+				return new ResponseEntity<byte[]>(content, headers, HttpStatus.OK);
 			}
 
 		} catch (AmazonServiceException ase) {
