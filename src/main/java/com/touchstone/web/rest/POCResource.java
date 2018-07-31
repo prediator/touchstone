@@ -1,12 +1,16 @@
 package com.touchstone.web.rest;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import javax.annotation.PostConstruct;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -168,6 +172,42 @@ public class POCResource {
 
 		return null;
 
+	}
+	
+	@PostMapping("/download")
+	public void downloadFile1(HttpServletRequest request, HttpServletResponse response, Principal name,@RequestBody Download download) throws FileNotFoundException, IOException {
+		String path = download.getPath();
+		String filename = download.getFilename();
+		User user = userService.getUserWithAuthoritiesByLogin(name.getName()).get();
+		try {
+			if (StringUtils.equals(user.getUserId(),path)) {
+				S3Object object = s3client.getObject(bucketName, path + "/" + filename);
+				S3ObjectInputStream s3is = object.getObjectContent();
+				response.setContentType(object.getObjectMetadata().getContentType());
+				response.setContentLength((int) object.getObjectMetadata().getContentLength());
+				String headerKey = "Content-Disposition";
+		        String headerValue = String.format("attachment; filename=\"%s\"",filename);
+		        response.setHeader(headerKey, headerValue);
+		        OutputStream outStream = response.getOutputStream();
+		        byte[] buffer = new byte[4096];
+		        int bytesRead = -1;
+		        while ((bytesRead = s3is.read(buffer)) != -1) {
+		            outStream.write(buffer, 0, bytesRead);
+		        }
+		        s3is.close();
+		        outStream.close();
+			}
+		} catch (AmazonServiceException ase) {
+			logger.info("Caught an AmazonServiceException from GET requests, rejected reasons:");
+			logger.info("Error Message:    " + ase.getMessage());
+			logger.info("HTTP Status Code: " + ase.getStatusCode());
+			logger.info("AWS Error Code:   " + ase.getErrorCode());
+			logger.info("Error Type:       " + ase.getErrorType());
+			logger.info("Request ID:       " + ase.getRequestId());
+		} catch (AmazonClientException ace) {
+			logger.info("Caught an AmazonClientException: ");
+			logger.info("Error Message: " + ace.getMessage());
+		}
 	}
 
 }
