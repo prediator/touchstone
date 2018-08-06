@@ -6,12 +6,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
-import com.touchstone.domain.Inquiry;
+import com.touchstone.domain.Bank;
 
 /**
  * Spring Data MongoDB repository for the User entity.
  */
 @Repository
-public interface InquiryRepository extends MongoRepository<Inquiry, String> {
+public interface BankRepository extends MongoRepository<Bank, String> {
 	
 }
