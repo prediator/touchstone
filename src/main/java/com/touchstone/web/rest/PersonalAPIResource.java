@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -116,6 +117,16 @@ public class PersonalAPIResource {
 		}
 	}
 
+	@GetMapping("/taxpaid")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public ResponseEntity<Tax> taxpaidGet(Principal login) {
+
+		User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
+		Tax data = taxRepository.findOne(user.getUserId());
+		return new ResponseEntity<Tax>(data, HttpStatus.CREATED);
+	}
+
 	@PostMapping("/credit")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
@@ -136,6 +147,16 @@ public class PersonalAPIResource {
 			e.printStackTrace();
 			return new ResponseEntity(HttpStatus.BAD_REQUEST);
 		}
+	}
+
+	@GetMapping("/credit")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public ResponseEntity<Credit> creditGet(Principal login) {
+
+		User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
+		Credit data = creditRepository.findOne(user.getUserId());
+		return new ResponseEntity<Credit>(data, HttpStatus.CREATED);
 	}
 
 	@PostMapping("/bank")
@@ -160,6 +181,16 @@ public class PersonalAPIResource {
 		}
 	}
 
+	@GetMapping("/bank")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public ResponseEntity<Bank> bankGet(Principal login) {
+
+		User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
+		Bank data = bankRepository.findOne(user.getUserId());
+		return new ResponseEntity<Bank>(data, HttpStatus.CREATED);
+	}
+
 	@PostMapping("/property")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
@@ -180,6 +211,16 @@ public class PersonalAPIResource {
 			e.printStackTrace();
 			return new ResponseEntity(HttpStatus.BAD_REQUEST);
 		}
+	}
+
+	@GetMapping("/property")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public ResponseEntity<Property> propertyGet(Principal login) {
+
+		User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
+		Property data = propertyRepository.findOne(user.getUserId());
+		return new ResponseEntity<Property>(data, HttpStatus.CREATED);
 	}
 
 	@PostMapping("/ious")
@@ -204,6 +245,16 @@ public class PersonalAPIResource {
 		}
 	}
 
+	@GetMapping("/ious")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public ResponseEntity<Ious> iousGet(Principal login) {
+
+		User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
+		Ious data = iousRepository.findOne(user.getUserId());
+		return new ResponseEntity<Ious>(data, HttpStatus.CREATED);
+	}
+
 	@PostMapping("/awards")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
@@ -224,6 +275,16 @@ public class PersonalAPIResource {
 			e.printStackTrace();
 			return new ResponseEntity(HttpStatus.BAD_REQUEST);
 		}
+	}
+
+	@GetMapping("/awards")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public ResponseEntity<Awards> awardsGet(Principal login) {
+
+		User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
+		Awards data = awardsRepository.findOne(user.getUserId());
+		return new ResponseEntity<Awards>(data, HttpStatus.CREATED);
 	}
 
 	@PostMapping("/miscellaneous")
@@ -248,6 +309,16 @@ public class PersonalAPIResource {
 		}
 	}
 
+	@GetMapping("/miscellaneous")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public ResponseEntity<Miscellaneous> miscellaneousGet(Principal login) {
+
+		User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
+		Miscellaneous data = miscellaneousRepository.findOne(user.getUserId());
+		return new ResponseEntity<Miscellaneous>(data, HttpStatus.CREATED);
+	}
+
 	@PostMapping("/insurance")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
@@ -268,6 +339,16 @@ public class PersonalAPIResource {
 			e.printStackTrace();
 			return new ResponseEntity(HttpStatus.BAD_REQUEST);
 		}
+	}
+
+	@GetMapping("/insurance")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public ResponseEntity<Insurance> insuranceGet(Principal login) {
+
+		User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
+		Insurance data = insuranceRepository.findOne(user.getUserId());
+		return new ResponseEntity<Insurance>(data, HttpStatus.CREATED);
 	}
 
 	public void uploadFileToS3(MultipartFile file, String id, String type) {
