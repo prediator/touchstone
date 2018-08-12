@@ -2,7 +2,6 @@ package com.touchstone.repository;
 
 import java.util.List;
 
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
@@ -13,5 +12,7 @@ import com.touchstone.domain.Tax;
  */
 @Repository
 public interface TaxRepository extends MongoRepository<Tax, String> {
-	
+
+	List<Tax> findAllByUserId(String userId);
+
 }

@@ -2,6 +2,7 @@ package com.touchstone.web.rest;
 
 import java.io.File;
 import java.security.Principal;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -120,11 +121,11 @@ public class PersonalAPIResource {
 	@GetMapping("/taxpaid")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<Tax> taxpaidGet(Principal login) {
+	public ResponseEntity<List<Tax>> taxpaidGet(Principal login) {
 
 		User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
-		Tax data = taxRepository.findOne(user.getUserId());
-		return new ResponseEntity<Tax>(data, HttpStatus.CREATED);
+		List<Tax> data = taxRepository.findAllByUserId(user.getUserId());
+		return new ResponseEntity<List<Tax>>(data, HttpStatus.CREATED);
 	}
 
 	@PostMapping("/credit")
