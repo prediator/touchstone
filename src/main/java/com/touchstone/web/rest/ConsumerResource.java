@@ -52,6 +52,7 @@ import com.touchstone.service.dto.Consumer;
 import com.touchstone.service.dto.ConsumerDTO;
 import com.touchstone.service.dto.Enterprise;
 import com.touchstone.service.dto.EnterpriseDTO;
+import com.touchstone.service.dto.Health;
 import com.touchstone.service.dto.Profile;
 import com.touchstone.service.dto.Update;
 import com.touchstone.service.dto.Validation;
@@ -97,8 +98,7 @@ public class ConsumerResource {
 	/**
 	 * POST /register : register Consumer.
 	 *
-	 * @param consumer
-	 *            the consumer data
+	 * @param consumer the consumer data
 	 * @throws JsonProcessingException
 	 */
 	@PostMapping("/Consumer")
@@ -107,6 +107,8 @@ public class ConsumerResource {
 	public ResponseEntity<String> registerAccount(@RequestBody Consumer consumer) throws JsonProcessingException {
 
 		String profileId = RandomUtil.generateActivationKey();
+		String medicalId = RandomUtil.generateActivationKey();
+
 		User data = new User();
 
 		data.setActivated(false);
@@ -118,6 +120,7 @@ public class ConsumerResource {
 		data.setUserType(UserType.CONSUMER.name());
 		data.setLangKey(consumer.getLangKey());
 		data.setProfileId(profileId);
+		data.setHealthId(medicalId);
 		userRepository.findOneByEmailIgnoreCase(data.getEmail()).ifPresent(u -> {
 			throw new EmailAlreadyUsedException();
 		});
@@ -138,22 +141,30 @@ public class ConsumerResource {
 		rt.getMessageConverters().add(new StringHttpMessageConverter());
 		String uri = new String(Constants.Url + "/Consumer");
 		rt.postForObject(uri, dest, ConsumerDTO.class);
-		
+
 		Profile profile = new Profile();
 		profile.setProfileId(data.getProfileId());
-		profile.setUser("resource:org.touchstone.basic.Consumer#"+data.getUserId());
+		profile.setUser("resource:org.touchstone.basic.Consumer#" + data.getUserId());
 		profile.setYearsOfExperience("");
-		
+
 		ObjectMapper mappers = new ObjectMapper();
 		String jsonInString = mappers.writeValueAsString(profile);
 		System.out.println(jsonInString);
-		
+
 		RestTemplate rt1 = new RestTemplate();
 		rt1.getMessageConverters().add(new StringHttpMessageConverter());
 		String uri1 = new String(Constants.Url + "/Profile");
 		rt1.postForObject(uri1, profile, Profile.class);
- 
-		
+
+		Health health = new Health();
+		health.setHealthId(medicalId);
+		health.setUser("resource:org.touchstone.basic.Consumer#" + dest.getUserId());
+
+		rt = new RestTemplate();
+		rt.getMessageConverters().add(new StringHttpMessageConverter());
+		uri = new String(Constants.Url + "/health");
+		rt.postForObject(uri, health, Health.class);
+
 		mailService.sendEmail(
 				data.getEmail(), "Account Created", "http://ridgelift.io:8080/api/verifyc/"
 						+ generateOtp.storeOTP(data.getUserId()) + "/" + data.getEmail() + "/" + data.getUserId(),
@@ -216,8 +227,7 @@ public class ConsumerResource {
 	/**
 	 * POST /register : register Enterprise.
 	 *
-	 * @param consumer
-	 *            the consumer data
+	 * @param consumer the consumer data
 	 * @throws JsonProcessingException
 	 */
 	@PostMapping("/Enterprise")
@@ -255,14 +265,14 @@ public class ConsumerResource {
 
 		rt.postForObject(uri, dest, EnterpriseDTO.class);
 		userService.registerEnterprise(data);
-		
+
 		Profile profile = new Profile();
-		
+
 		RestTemplate rt1 = new RestTemplate();
 		rt1.getMessageConverters().add(new StringHttpMessageConverter());
 		String uri1 = new String(Constants.Url + "/Profile");
 		rt1.postForObject(uri1, profile, Profile.class);
-		
+
 		mailService.sendEmail(
 				data.getEmail(), "Account Created", "http://ridgelift.io:8080/api/verifye/"
 						+ generateOtp.storeOTP(data.getUserId()) + "/" + data.getEmail() + "/" + data.getUserId(),
@@ -283,8 +293,7 @@ public class ConsumerResource {
 	/**
 	 * POST /ValidateEmail : email validation
 	 *
-	 * @param email
-	 *            the email data
+	 * @param email the email data
 	 */
 	@PostMapping("/ValidateEmail")
 	@Timed
@@ -302,10 +311,8 @@ public class ConsumerResource {
 	/**
 	 * POST /ValidateMobile : to validate otp
 	 *
-	 * @param phone
-	 *            the phone number
-	 * @param id
-	 *            the otp
+	 * @param phone the phone number
+	 * @param id    the otp
 	 */
 	@GetMapping("/ValidateMobile/{id}/{phone}/{user}")
 	@Timed
@@ -336,8 +343,7 @@ public class ConsumerResource {
 	/**
 	 * POST /sentOtp : to sent otp
 	 *
-	 * @param phone
-	 *            the phone data
+	 * @param phone the phone data
 	 */
 	@GetMapping("/sentOtp/{phone}")
 	@Timed
@@ -365,8 +371,7 @@ public class ConsumerResource {
 	/**
 	 * POST /ValidateAddress : Address validation
 	 *
-	 * @param address
-	 *            the phone data
+	 * @param address the phone data
 	 */
 	@PostMapping("/ValidateAddress")
 	@Timed
@@ -384,8 +389,7 @@ public class ConsumerResource {
 	/**
 	 * POST /UpdateMobile : Address validation
 	 *
-	 * @param address
-	 *            the phone data
+	 * @param address the phone data
 	 */
 	@PostMapping("/UpdateMobile")
 	@Timed
@@ -403,8 +407,7 @@ public class ConsumerResource {
 	/**
 	 * POST /ValidateAddress : Address validation
 	 *
-	 * @param address
-	 *            the phone data
+	 * @param address the phone data
 	 */
 	@PostMapping("/UpdateAddress")
 	@Timed
@@ -421,8 +424,7 @@ public class ConsumerResource {
 	/**
 	 * POST /UpdateEmail : Address validation
 	 *
-	 * @param address
-	 *            the phone data
+	 * @param address the phone data
 	 */
 	@PostMapping("/UpdateEmail")
 	@Timed
@@ -439,8 +441,7 @@ public class ConsumerResource {
 	/**
 	 * POST /UpdateName : Address validation
 	 *
-	 * @param address
-	 *            the phone data
+	 * @param address the phone data
 	 */
 	@PostMapping("/UpdateName")
 	@Timed
@@ -457,8 +458,7 @@ public class ConsumerResource {
 	/**
 	 * POST /Consumer/{userid} : To get Consumer
 	 *
-	 * @param userid
-	 *            the user id
+	 * @param userid the user id
 	 */
 	@GetMapping("/Consumer/{userid}")
 	@Timed
@@ -489,8 +489,7 @@ public class ConsumerResource {
 	/**
 	 * POST /Consumer/email/{email} : To get Consumer by Email
 	 *
-	 * @param email
-	 *            the user email
+	 * @param email the user email
 	 */
 	@GetMapping("/Consumer/email/{email:.+}")
 	@Timed
@@ -511,8 +510,7 @@ public class ConsumerResource {
 	/**
 	 * POST /Enterprise/{userid} : To get Enterprise
 	 *
-	 * @param userid
-	 *            the id
+	 * @param userid the id
 	 */
 	@GetMapping("/Enterprise/{userid}")
 	@Timed
@@ -535,8 +533,7 @@ public class ConsumerResource {
 	/**
 	 * POST /Enterprise/email/{email} : To get Enterprise by Email
 	 *
-	 * @param email
-	 *            the user email
+	 * @param email the user email
 	 */
 	@GetMapping("/Enterprise/email/{email:.+}")
 	@Timed
@@ -557,8 +554,7 @@ public class ConsumerResource {
 	/**
 	 * POST /Enterprise/email/{email} : To get Enterprise by Email
 	 *
-	 * @param email
-	 *            the user email
+	 * @param email the user email
 	 */
 	@GetMapping("/documents/{id}")
 	@Timed
@@ -610,8 +606,7 @@ public class ConsumerResource {
 	/**
 	 * POST /UpdateName : Address validation
 	 *
-	 * @param address
-	 *            the phone data
+	 * @param address the phone data
 	 */
 	@PostMapping("/inquiry")
 	@Timed

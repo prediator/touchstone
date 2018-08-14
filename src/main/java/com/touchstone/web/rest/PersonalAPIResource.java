@@ -109,6 +109,7 @@ public class PersonalAPIResource {
 
 			tax.setUserId(user.getUserId());
 
+			uploadFileToS3(file, user.getUserId(), "taxpaid");
 			taxRepository.save(tax);
 
 			return new ResponseEntity(HttpStatus.CREATED);
@@ -140,7 +141,7 @@ public class PersonalAPIResource {
 			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
 
 			credit.setUserId(user.getUserId());
-
+			uploadFileToS3(file, user.getUserId(), "credit");
 			creditRepository.save(credit);
 
 			return new ResponseEntity(HttpStatus.CREATED);
@@ -153,11 +154,11 @@ public class PersonalAPIResource {
 	@GetMapping("/credit")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<Credit> creditGet(Principal login) {
+	public ResponseEntity<List<Credit>> creditGet(Principal login) {
 
 		User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
-		Credit data = creditRepository.findOne(user.getUserId());
-		return new ResponseEntity<Credit>(data, HttpStatus.CREATED);
+		List<Credit> data = creditRepository.findAllByUserId(user.getUserId());
+		return new ResponseEntity<List<Credit>>(data, HttpStatus.CREATED);
 	}
 
 	@PostMapping("/bank")
@@ -172,7 +173,7 @@ public class PersonalAPIResource {
 			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
 
 			bank.setUserId(user.getUserId());
-
+			uploadFileToS3(file, user.getUserId(), "bank");
 			bankRepository.save(bank);
 
 			return new ResponseEntity(HttpStatus.CREATED);
@@ -185,11 +186,11 @@ public class PersonalAPIResource {
 	@GetMapping("/bank")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<Bank> bankGet(Principal login) {
+	public ResponseEntity<List<Bank>> bankGet(Principal login) {
 
 		User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
-		Bank data = bankRepository.findOne(user.getUserId());
-		return new ResponseEntity<Bank>(data, HttpStatus.CREATED);
+		List<Bank> data = bankRepository.findAllByUserId(user.getUserId());
+		return new ResponseEntity<List<Bank>>(data, HttpStatus.CREATED);
 	}
 
 	@PostMapping("/property")
@@ -204,7 +205,7 @@ public class PersonalAPIResource {
 			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
 
 			property.setUserId(user.getUserId());
-
+			uploadFileToS3(file, user.getUserId(), "property");
 			propertyRepository.save(property);
 
 			return new ResponseEntity(HttpStatus.CREATED);
@@ -217,11 +218,11 @@ public class PersonalAPIResource {
 	@GetMapping("/property")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<Property> propertyGet(Principal login) {
+	public ResponseEntity<List<Property>> propertyGet(Principal login) {
 
 		User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
-		Property data = propertyRepository.findOne(user.getUserId());
-		return new ResponseEntity<Property>(data, HttpStatus.CREATED);
+		List<Property> data = propertyRepository.findAllByUserId(user.getUserId());
+		return new ResponseEntity<List<Property>>(data, HttpStatus.CREATED);
 	}
 
 	@PostMapping("/ious")
@@ -236,7 +237,7 @@ public class PersonalAPIResource {
 			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
 
 			property.setUserId(user.getUserId());
-
+			uploadFileToS3(file, user.getUserId(), "ious");
 			iousRepository.save(property);
 
 			return new ResponseEntity(HttpStatus.CREATED);
@@ -249,11 +250,11 @@ public class PersonalAPIResource {
 	@GetMapping("/ious")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<Ious> iousGet(Principal login) {
+	public ResponseEntity<List<Ious>> iousGet(Principal login) {
 
 		User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
-		Ious data = iousRepository.findOne(user.getUserId());
-		return new ResponseEntity<Ious>(data, HttpStatus.CREATED);
+		List<Ious> data = iousRepository.findAllByUserId(user.getUserId());
+		return new ResponseEntity<List<Ious>>(data, HttpStatus.CREATED);
 	}
 
 	@PostMapping("/awards")
@@ -268,7 +269,7 @@ public class PersonalAPIResource {
 			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
 
 			property.setUserId(user.getUserId());
-
+			uploadFileToS3(file, user.getUserId(), "awards");
 			awardsRepository.save(property);
 
 			return new ResponseEntity(HttpStatus.CREATED);
@@ -281,11 +282,11 @@ public class PersonalAPIResource {
 	@GetMapping("/awards")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<Awards> awardsGet(Principal login) {
+	public ResponseEntity<List<Awards>> awardsGet(Principal login) {
 
 		User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
-		Awards data = awardsRepository.findOne(user.getUserId());
-		return new ResponseEntity<Awards>(data, HttpStatus.CREATED);
+		List<Awards> data = awardsRepository.findAllByUserId(user.getUserId());
+		return new ResponseEntity<List<Awards>>(data, HttpStatus.CREATED);
 	}
 
 	@PostMapping("/miscellaneous")
@@ -300,7 +301,7 @@ public class PersonalAPIResource {
 			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
 
 			property.setUserId(user.getUserId());
-
+			uploadFileToS3(file, user.getUserId(), "miscellaneous");
 			miscellaneousRepository.save(property);
 
 			return new ResponseEntity(HttpStatus.CREATED);
@@ -313,11 +314,11 @@ public class PersonalAPIResource {
 	@GetMapping("/miscellaneous")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<Miscellaneous> miscellaneousGet(Principal login) {
+	public ResponseEntity<List<Miscellaneous>> miscellaneousGet(Principal login) {
 
 		User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
-		Miscellaneous data = miscellaneousRepository.findOne(user.getUserId());
-		return new ResponseEntity<Miscellaneous>(data, HttpStatus.CREATED);
+		List<Miscellaneous> data = miscellaneousRepository.findAllByUserId(user.getUserId());
+		return new ResponseEntity<List<Miscellaneous>>(data, HttpStatus.CREATED);
 	}
 
 	@PostMapping("/insurance")
@@ -332,7 +333,7 @@ public class PersonalAPIResource {
 			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
 
 			property.setUserId(user.getUserId());
-
+			uploadFileToS3(file, user.getUserId(), "insurance");
 			insuranceRepository.save(property);
 
 			return new ResponseEntity(HttpStatus.CREATED);
@@ -345,11 +346,11 @@ public class PersonalAPIResource {
 	@GetMapping("/insurance")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<Insurance> insuranceGet(Principal login) {
+	public ResponseEntity<List<Insurance>> insuranceGet(Principal login) {
 
 		User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
-		Insurance data = insuranceRepository.findOne(user.getUserId());
-		return new ResponseEntity<Insurance>(data, HttpStatus.CREATED);
+		List<Insurance> data = insuranceRepository.findAllByUserId(user.getUserId());
+		return new ResponseEntity<List<Insurance>>(data, HttpStatus.CREATED);
 	}
 
 	public void uploadFileToS3(MultipartFile file, String id, String type) {
