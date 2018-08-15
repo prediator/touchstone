@@ -4,16 +4,25 @@ import java.util.List;
 
 public class HealthCare_ {
 
-	private String $class = "org.touchstone.basic.healthCare";
-	private String healthCareId;
-	private String bloodGroup;
-	private String height;
-	private String weight;
-	private String sugar;
-	private String bloodPressure;
-	private String dateOfReport;
-	private Boolean needCheckUpReminder;
-	private List<Object> reportReference = null;
+	private String $class = "org.touchstone.basic.HealthCare";
+	private String healthCareId = "";
+	private String bloodGroup = "";
+	private String height = "";
+	private String weight = "";
+	private String sugar = "";
+	private String bloodPressure = "";
+	private String dateOfReport = "";
+	private Boolean needCheckUpReminder = false;
+
+	@Override
+	public String toString() {
+		return "HealthCare_ [$class=" + $class + ", healthCareId=" + healthCareId + ", bloodGroup=" + bloodGroup
+				+ ", height=" + height + ", weight=" + weight + ", sugar=" + sugar + ", bloodPressure=" + bloodPressure
+				+ ", dateOfReport=" + dateOfReport + ", needCheckUpReminder=" + needCheckUpReminder
+				+ ", reportReference=" + reportReference + ", validation=" + validation + "]";
+	}
+
+	private List<String> reportReference = null;
 	private Validation validation;
 
 	public String get$class() {
@@ -88,11 +97,11 @@ public class HealthCare_ {
 		this.needCheckUpReminder = needCheckUpReminder;
 	}
 
-	public List<Object> getReportReference() {
+	public List<String> getReportReference() {
 		return reportReference;
 	}
 
-	public void setReportReference(List<Object> reportReference) {
+	public void setReportReference(List<String> reportReference) {
 		this.reportReference = reportReference;
 	}
 

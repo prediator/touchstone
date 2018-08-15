@@ -3,7 +3,7 @@ package com.touchstone.service.dto;
 
 public class HealthCare {
 
-	private String $class = "org.touchstone.basic.addhealthCare";
+	private String $class = "org.touchstone.basic.addHealthCare";
 	private HealthCare_ HealthCare;
 	private String health;
 
@@ -30,5 +30,13 @@ public class HealthCare {
 	public void setHealth(String health) {
 		this.health = health;
 	}
+
+	@Override
+	public String toString() {
+		return "HealthCare [$class=" + $class + ", HealthCare=" + HealthCare + ", health=" + health + ", getClass()="
+				+ getClass() + ", hashCode()=" + hashCode() + ", toString()=" + super.toString() + "]";
+	}
+
+	 
 
 }

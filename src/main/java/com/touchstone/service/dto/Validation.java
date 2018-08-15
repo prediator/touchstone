@@ -24,6 +24,74 @@ public class Validation {
 
 	@JsonInclude(Include.NON_NULL)
 	private Boolean isAddressValidated;
+	
+	@JsonInclude(Include.NON_NULL)
+	private String validationBy;
+	
+	@JsonInclude(Include.NON_NULL)
+	private String validationStatus;
+	
+	@JsonInclude(Include.NON_NULL)
+	private String validationType;
+	
+	@JsonInclude(Include.NON_NULL)
+	private String validationDate;
+	
+	@JsonInclude(Include.NON_NULL)
+	private String validationEmail;
+	
+	@JsonInclude(Include.NON_NULL)
+	private String validationNote;
+	
+	
+
+	public String getValidationBy() {
+		return validationBy;
+	}
+
+	public void setValidationBy(String validationBy) {
+		this.validationBy = validationBy;
+	}
+
+	public String getValidationStatus() {
+		return validationStatus;
+	}
+
+	public void setValidationStatus(String validationStatus) {
+		this.validationStatus = validationStatus;
+	}
+
+	public String getValidationType() {
+		return validationType;
+	}
+
+	public void setValidationType(String validationType) {
+		this.validationType = validationType;
+	}
+
+	public String getValidationDate() {
+		return validationDate;
+	}
+
+	public void setValidationDate(String validationDate) {
+		this.validationDate = validationDate;
+	}
+
+	public String getValidationEmail() {
+		return validationEmail;
+	}
+
+	public void setValidationEmail(String validationEmail) {
+		this.validationEmail = validationEmail;
+	}
+
+	public String getValidationNote() {
+		return validationNote;
+	}
+
+	public void setValidationNote(String validationNote) {
+		this.validationNote = validationNote;
+	}
 
 	public String getEnterprise() {
 		return enterprise;
