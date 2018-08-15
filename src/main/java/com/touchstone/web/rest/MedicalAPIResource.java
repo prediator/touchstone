@@ -81,7 +81,7 @@ public class MedicalAPIResource {
 			Document document = new Document();
 			PdfWriter.getInstance(document, new FileOutputStream(tmpDir + name + ".pdf"));
 			document.open();
-			document.add(new Paragraph("Hello World!"));
+			document.add(new Paragraph(ailment.toString()));
 			document.close();
 
 			File file = new File(tmpDir + name + ".pdf");
