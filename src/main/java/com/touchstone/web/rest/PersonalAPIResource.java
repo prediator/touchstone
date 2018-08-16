@@ -4,6 +4,7 @@ import java.io.File;
 import java.security.Principal;
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -33,6 +34,7 @@ import com.touchstone.domain.Credit;
 import com.touchstone.domain.Insurance;
 import com.touchstone.domain.Ious;
 import com.touchstone.domain.Miscellaneous;
+import com.touchstone.domain.Personal;
 import com.touchstone.domain.Property;
 import com.touchstone.domain.Tax;
 import com.touchstone.domain.User;
@@ -42,6 +44,7 @@ import com.touchstone.repository.CreditRepository;
 import com.touchstone.repository.InsuranceRepository;
 import com.touchstone.repository.IousRepository;
 import com.touchstone.repository.MiscellaneousRepository;
+import com.touchstone.repository.PersonalRepository;
 import com.touchstone.repository.PropertyRepository;
 import com.touchstone.repository.TaxRepository;
 import com.touchstone.service.MailService;
@@ -66,6 +69,8 @@ public class PersonalAPIResource {
 
 	private TaxRepository taxRepository;
 
+	private PersonalRepository personalRepository;
+
 	private CreditRepository creditRepository;
 
 	private BankRepository bankRepository;
@@ -83,7 +88,7 @@ public class PersonalAPIResource {
 	public PersonalAPIResource(UserService userService, MailService mailService, TaxRepository taxRepository,
 			CreditRepository creditRepository, BankRepository bankRepository, PropertyRepository propertyRepository,
 			IousRepository iousRepository, AwardsRepository awardsRepository, InsuranceRepository insuranceRepository,
-			MiscellaneousRepository miscellaneousRepository) {
+			MiscellaneousRepository miscellaneousRepository, PersonalRepository personalRepository) {
 		this.userService = userService;
 		this.mailService = mailService;
 		this.taxRepository = taxRepository;
@@ -94,6 +99,43 @@ public class PersonalAPIResource {
 		this.awardsRepository = awardsRepository;
 		this.insuranceRepository = insuranceRepository;
 		this.miscellaneousRepository = miscellaneousRepository;
+		this.personalRepository = personalRepository;
+	}
+
+	@PostMapping("/aadharlicensetax")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public ResponseEntity<Personal> getaadharlicensetax(@RequestParam(name = "type ", required = true) String type,
+			@RequestParam(name = "number", required = true) String number, Principal login)
+			throws JsonProcessingException {
+		try {
+			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
+			Personal personal = new Personal();
+			if (StringUtils.equals("aadhar", type)) {
+				personal.setAadhar(number);
+			} else if (StringUtils.equals("license ", type)) {
+				personal.setLicense(number);
+			} else {
+				personal.setTaxno(number);
+			}
+			personal.setUserId(user.getUserId());
+			personalRepository.save(personal);
+
+			return new ResponseEntity(personal, HttpStatus.CREATED);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return new ResponseEntity(null, HttpStatus.BAD_REQUEST);
+		}
+	}
+
+	@GetMapping("/aadharlicensetax")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public ResponseEntity<Personal> getaadharlicensetax(Principal login) {
+
+		User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
+		Personal data = personalRepository.findByUserId(user.getUserId());
+		return new ResponseEntity<Personal>(data, HttpStatus.CREATED);
 	}
 
 	@PostMapping("/taxpaid")

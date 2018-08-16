@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.security.Principal;
+import java.util.List;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -13,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -36,6 +38,7 @@ import com.itextpdf.text.Document;
 import com.itextpdf.text.Paragraph;
 import com.itextpdf.text.pdf.PdfWriter;
 import com.touchstone.config.Constants;
+import com.touchstone.domain.Tax;
 import com.touchstone.domain.User;
 import com.touchstone.service.MailService;
 import com.touchstone.service.UserService;
@@ -88,7 +91,7 @@ public class MedicalAPIResource {
 			FileInputStream input = new FileInputStream(file);
 			MultipartFile multipartFile = new MockMultipartFile("file", file.getName(), "text/plain",
 					IOUtils.toByteArray(input));
-			uploadFileToS3(multipartFile, "16406672519380362949", "medical");
+			uploadFileToS3(multipartFile, user.getUserId(), "medical");
 
 			ailment.getAilment().setAilmentReference("medical/" + file.getName());
 			RestTemplate rt = new RestTemplate();
