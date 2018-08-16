@@ -116,7 +116,7 @@ public class PersonalAPIResource {
 			}
 			if (StringUtils.equals("aadhar", type)) {
 				personal.setAadhar(number);
-			} else if (StringUtils.equals("license ", type)) {
+			} else if (StringUtils.equals("license", type)) {
 				personal.setLicense(number);
 			} else {
 				personal.setTaxno(number);
