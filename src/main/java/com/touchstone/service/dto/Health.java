@@ -5,13 +5,13 @@ import java.util.List;
 
 public class Health {
 
-	private String $class = "org.touchstone.basic.health";
+	private String $class = "org.touchstone.basic.Health";
 	private String healthId;
 	private String user;
-	private List<Object> healthCare = null;
-	private List<Object> healthCareReport = null;
-	private List<Object> insuranceClaims = null;
-	private List<Object> ailment = null;
+	private List<String> healthCare = null;
+	private List<String> healthCareReport = null;
+	private List<String> insuranceClaims = null;
+	private List<String> ailment = null;
 
 	public String get$class() {
 		return $class;
@@ -33,35 +33,35 @@ public class Health {
 		this.user = user;
 	}
 
-	public List<Object> getHealthCare() {
+	public List<String> getHealthCare() {
 		return healthCare;
 	}
 
-	public void setHealthCare(List<Object> healthCare) {
+	public void setHealthCare(List<String> healthCare) {
 		this.healthCare = healthCare;
 	}
 
-	public List<Object> getHealthCareReport() {
+	public List<String> getHealthCareReport() {
 		return healthCareReport;
 	}
 
-	public void setHealthCareReport(List<Object> healthCareReport) {
+	public void setHealthCareReport(List<String> healthCareReport) {
 		this.healthCareReport = healthCareReport;
 	}
 
-	public List<Object> getInsuranceClaims() {
+	public List<String> getInsuranceClaims() {
 		return insuranceClaims;
 	}
 
-	public void setInsuranceClaims(List<Object> insuranceClaims) {
+	public void setInsuranceClaims(List<String> insuranceClaims) {
 		this.insuranceClaims = insuranceClaims;
 	}
 
-	public List<Object> getAilment() {
+	public List<String> getAilment() {
 		return ailment;
 	}
 
-	public void setAilment(List<Object> ailment) {
+	public void setAilment(List<String> ailment) {
 		this.ailment = ailment;
 	}
 

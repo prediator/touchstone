@@ -147,10 +147,6 @@ public class ConsumerResource {
 		profile.setUser("resource:org.touchstone.basic.Consumer#" + data.getUserId());
 		profile.setYearsOfExperience("");
 
-		ObjectMapper mappers = new ObjectMapper();
-		String jsonInString = mappers.writeValueAsString(profile);
-		System.out.println(jsonInString);
-
 		RestTemplate rt1 = new RestTemplate();
 		rt1.getMessageConverters().add(new StringHttpMessageConverter());
 		String uri1 = new String(Constants.Url + "/Profile");
@@ -162,7 +158,11 @@ public class ConsumerResource {
 
 		rt = new RestTemplate();
 		rt.getMessageConverters().add(new StringHttpMessageConverter());
-		uri = new String(Constants.Url + "/health");
+		uri = new String(Constants.Url + "/Health");
+		
+		ObjectMapper mappers = new ObjectMapper();
+		String jsonInString = mappers.writeValueAsString(health);
+		System.out.println(jsonInString);
 		rt.postForObject(uri, health, Health.class);
 
 		mailService.sendEmail(

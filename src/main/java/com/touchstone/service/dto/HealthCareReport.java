@@ -3,7 +3,7 @@ package com.touchstone.service.dto;
 
 public class HealthCareReport {
 
-	private String $class;
+	private String $class = "org.touchstone.basic.addHealthCareReport";
 	private HealthCareReport_ healthCareReport;
 	private String health;
 

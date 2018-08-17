@@ -4,11 +4,11 @@ import java.util.List;
 
 public class HealthCareReport_ {
 
-	private String $class;
+	private String $class = "org.touchstone.basic.HealthCareReport";
 	private String healthCareReportId;
 	private String name;
 	private String date;
-	private List<Object> reportReference = null;
+	private List<String> reportReference = null;
 	private Validation validation;
 
 	public String get$class() {
@@ -43,11 +43,11 @@ public class HealthCareReport_ {
 		this.date = date;
 	}
 
-	public List<Object> getReportReference() {
+	public List<String> getReportReference() {
 		return reportReference;
 	}
 
-	public void setReportReference(List<Object> reportReference) {
+	public void setReportReference(List<String> reportReference) {
 		this.reportReference = reportReference;
 	}
 
