@@ -105,15 +105,18 @@ public class PersonalAPIResource {
 	@PostMapping("/aadharlicensetax")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<Personal> getaadharlicensetax(@RequestParam(name = "type ", required = true) String type,
+	public ResponseEntity<Personal> getaadharlicensetax(@RequestParam(name = "type", required = true) String type,
 			@RequestParam(name = "number", required = true) String number, Principal login)
 			throws JsonProcessingException {
 		try {
 			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
-			Personal personal = new Personal();
+			Personal personal = personalRepository.findByUserId(user.getUserId());
+			if(personal == null) {
+				personal  = new Personal();
+			}
 			if (StringUtils.equals("aadhar", type)) {
 				personal.setAadhar(number);
-			} else if (StringUtils.equals("license ", type)) {
+			} else if (StringUtils.equals("license", type)) {
 				personal.setLicense(number);
 			} else {
 				personal.setTaxno(number);
