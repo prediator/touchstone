@@ -1,21 +1,14 @@
-package com.touchstone.domain;
+package com.touchstone.service.dto;
 
 import java.io.Serializable;
-
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
 
 /**
  * tax
  */
 
-@Document(collection = "personal")
-public class Personal implements Serializable {
+public class PersonalDTO implements Serializable {
 
 	private static final long serialVersionUID = 1L;
-
-	@Id
-	private String id;
 
 	private String license;
 
@@ -24,14 +17,6 @@ public class Personal implements Serializable {
 	private String taxno;
 
 	private String userId;
-
-	public String getId() {
-		return id;
-	}
-
-	public void setId(String id) {
-		this.id = id;
-	}
 
 	public String getUserId() {
 		return userId;

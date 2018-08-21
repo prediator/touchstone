@@ -5,16 +5,16 @@ import java.util.List;
 public class InsuranceClaim_ {
 
 	private String $class = "org.touchstone.basic.InsuranceClaim";
-	private String insuranceClaimId;
+	private String insuranceClaimId = "";
 	private Boolean currentlyCovered;
-	private String companyName;
+	private String companyName = "";
 	private Boolean hospitalisedInLast;
 	private Boolean previouslyCovered;
-	private String previouslyCoveredInsuranceName;
-	private String diagnosis;
-	private String dateOfInsurance;
-	private String policyNo;
-	private String dateOfAdmition;
+	private String previouslyCoveredInsuranceName = "";
+	private String diagnosis = "";
+	private String dateOfInsurance = "";
+	private String policyNo = "";
+	private String dateOfAdmition = "";
 	private List<String> claimreports = null;
 	private List<String> ailment = null;
 	private Validation validation;

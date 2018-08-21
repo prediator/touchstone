@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.security.Principal;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -13,6 +15,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -42,9 +46,13 @@ import com.touchstone.service.MailService;
 import com.touchstone.service.UserService;
 import com.touchstone.service.dto.Ailment;
 import com.touchstone.service.dto.Ailment_;
+import com.touchstone.service.dto.Health;
 import com.touchstone.service.dto.HealthCare;
 import com.touchstone.service.dto.HealthCareReport;
 import com.touchstone.service.dto.InsuranceClaim;
+import com.touchstone.service.dto.InsuranceClaim_;
+import com.touchstone.service.dto.InsuranceDetails;
+import com.touchstone.service.dto.Validation;
 import com.touchstone.web.rest.util.GenerateOTP;
 
 /**
@@ -57,14 +65,28 @@ public class MedicalAPIResource {
 
 	private final Logger log = LoggerFactory.getLogger(MedicalAPIResource.class);
 	private final UserService userService;
-	private final String tmpDir = "D:\\";
-	// private final String tmpDir = "/tmp/";
+	//private final String tmpDir = "D:\\";
+	 private final String tmpDir = "/tmp/";
 	private GenerateOTP generateOtp = new GenerateOTP();
 	private final MailService mailService;
 
 	public MedicalAPIResource(UserService userService, MailService mailService) {
 		this.userService = userService;
 		this.mailService = mailService;
+	}
+
+	@GetMapping("/selectHealthByHealthId/{healthId}")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public ResponseEntity<List<Health>> validedEmail(@PathVariable(value = "healthId") String healthId) {
+
+		RestTemplate rt = new RestTemplate();
+		String uri = new String(Constants.Url + "/queries/selectHealthByHealthId?healthId=" + healthId);
+
+		List<Health> data = rt.getForObject(uri, List.class);
+
+		return new ResponseEntity<List<Health>>(data, HttpStatus.ACCEPTED);
+
 	}
 
 	@PostMapping("/addailment")
@@ -141,8 +163,8 @@ public class MedicalAPIResource {
 	@PostMapping("/addhealthCareReport")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<String> addhealthCareReport(@RequestParam("healthReportDetails") String healthReportDetails , Principal login)
-			throws JsonProcessingException {
+	public ResponseEntity<String> addhealthCareReport(@RequestParam("healthReportDetails") String healthReportDetails,
+			Principal login) throws JsonProcessingException {
 
 		try {
 			HealthCareReport healthCareReport = new HealthCareReport();
@@ -166,13 +188,41 @@ public class MedicalAPIResource {
 	@PostMapping("/addInsuranceClaim")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<String> addinsuranceClaim(@RequestBody InsuranceClaim insuranceClaim, Principal login)
+	public ResponseEntity<String> addinsuranceClaim(@RequestParam("insuranceDetails") String claim, Principal login)
 			throws JsonProcessingException {
 
 		try {
+			ObjectMapper jsonParserClient = new ObjectMapper();
+			InsuranceDetails ins = jsonParserClient.readValue(claim, InsuranceDetails.class);
 
+			InsuranceClaim insuranceClaim = new InsuranceClaim();
 			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
-			insuranceClaim.setHealth("resource:org.touchstone.basic.health#" + user.getHealthId());
+			insuranceClaim.setHealth("resource:org.touchstone.basic.Health#" + user.getHealthId());
+
+			InsuranceClaim_ ic = new InsuranceClaim_();
+
+			ic.setClaimreports(new ArrayList());
+			ic.setAilment(new ArrayList());
+			ic.setCurrentlyCovered(false);
+			ic.setHospitalisedInLast(false);
+			ic.setPreviouslyCovered(false);
+			ic.setPolicyNo(ins.getPolicyNumber());
+			
+			Validation valid = new Validation();
+			valid.set$class("org.touchstone.basic.Validation");
+			valid.setValidationStatus("VALIDATE");
+			valid.setValidationType("MANUAL");
+			valid.setValidationBy("");
+			valid.setValidationDate("");
+			valid.setValidationEmail("");
+			valid.setValidationNote("");
+
+			ic.setValidation(valid);
+
+			insuranceClaim.setInsuranceClaim(ic);
+			ObjectMapper mappers = new ObjectMapper();
+			String jsonInString = mappers.writeValueAsString(insuranceClaim);
+			System.out.println(jsonInString);
 
 			RestTemplate rt = new RestTemplate();
 			rt.getMessageConverters().add(new StringHttpMessageConverter());

@@ -48,6 +48,7 @@ import com.touchstone.repository.PersonalRepository;
 import com.touchstone.repository.PropertyRepository;
 import com.touchstone.repository.TaxRepository;
 import com.touchstone.service.MailService;
+import com.touchstone.service.PersonalService;
 import com.touchstone.service.UserService;
 import com.touchstone.web.rest.util.GenerateOTP;
 
@@ -85,10 +86,13 @@ public class PersonalAPIResource {
 
 	private MiscellaneousRepository miscellaneousRepository;
 
+	private PersonalService personalService;
+
 	public PersonalAPIResource(UserService userService, MailService mailService, TaxRepository taxRepository,
 			CreditRepository creditRepository, BankRepository bankRepository, PropertyRepository propertyRepository,
 			IousRepository iousRepository, AwardsRepository awardsRepository, InsuranceRepository insuranceRepository,
-			MiscellaneousRepository miscellaneousRepository, PersonalRepository personalRepository) {
+			MiscellaneousRepository miscellaneousRepository, PersonalRepository personalRepository,
+			PersonalService personalService) {
 		this.userService = userService;
 		this.mailService = mailService;
 		this.taxRepository = taxRepository;
@@ -100,6 +104,7 @@ public class PersonalAPIResource {
 		this.insuranceRepository = insuranceRepository;
 		this.miscellaneousRepository = miscellaneousRepository;
 		this.personalRepository = personalRepository;
+		this.personalService = personalService;
 	}
 
 	@PostMapping("/aadharlicensetax")
@@ -111,20 +116,27 @@ public class PersonalAPIResource {
 		try {
 			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
 			Personal personal = personalRepository.findByUserId(user.getUserId());
-			if(personal == null) {
-				personal  = new Personal();
+			System.out.println(personal);
+			if (personal == null) {
+				personal = new Personal();
 			}
 			if (StringUtils.equals("aadhar", type)) {
 				personal.setAadhar(number);
+				personal.setLicense(personal.getLicense());
+				personal.setTaxno(personal.getTaxno());
 			} else if (StringUtils.equals("license", type)) {
 				personal.setLicense(number);
+				personal.setTaxno(personal.getTaxno());
+				personal.setAadhar(personal.getAadhar());
 			} else {
 				personal.setTaxno(number);
+				personal.setAadhar(personal.getAadhar());
+				personal.setLicense(personal.getLicense());
 			}
 			personal.setUserId(user.getUserId());
-			personalRepository.save(personal);
+			Personal personals = personalRepository.save(personal);
 
-			return new ResponseEntity(personal, HttpStatus.CREATED);
+			return new ResponseEntity(personals, HttpStatus.CREATED);
 		} catch (Exception e) {
 			e.printStackTrace();
 			return new ResponseEntity(null, HttpStatus.BAD_REQUEST);

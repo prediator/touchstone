@@ -8,13 +8,17 @@ public class Health {
 	private String $class = "org.touchstone.basic.Health";
 	private String healthId;
 	private String user;
-	private List<String> healthCare = null;
-	private List<String> healthCareReport = null;
-	private List<String> insuranceClaims = null;
-	private List<String> ailment = null;
+	private List<HealthCare_> healthCare = null;
+	private List<HealthCareReport_> healthCareReport = null;
+	private List<InsuranceClaim_> insuranceClaim = null;
+	private List<Ailment_> ailment = null;
 
 	public String get$class() {
 		return $class;
+	}
+
+	public void set$class(String $class) {
+		this.$class = $class;
 	}
 
 	public String getHealthId() {
@@ -33,35 +37,35 @@ public class Health {
 		this.user = user;
 	}
 
-	public List<String> getHealthCare() {
+	public List<HealthCare_> getHealthCare() {
 		return healthCare;
 	}
 
-	public void setHealthCare(List<String> healthCare) {
+	public void setHealthCare(List<HealthCare_> healthCare) {
 		this.healthCare = healthCare;
 	}
 
-	public List<String> getHealthCareReport() {
+	public List<HealthCareReport_> getHealthCareReport() {
 		return healthCareReport;
 	}
 
-	public void setHealthCareReport(List<String> healthCareReport) {
+	public void setHealthCareReport(List<HealthCareReport_> healthCareReport) {
 		this.healthCareReport = healthCareReport;
 	}
 
-	public List<String> getInsuranceClaims() {
-		return insuranceClaims;
+	public List<InsuranceClaim_> getInsuranceClaim() {
+		return insuranceClaim;
 	}
 
-	public void setInsuranceClaims(List<String> insuranceClaims) {
-		this.insuranceClaims = insuranceClaims;
+	public void setInsuranceClaim(List<InsuranceClaim_> insuranceClaim) {
+		this.insuranceClaim = insuranceClaim;
 	}
 
-	public List<String> getAilment() {
+	public List<Ailment_> getAilment() {
 		return ailment;
 	}
 
-	public void setAilment(List<String> ailment) {
+	public void setAilment(List<Ailment_> ailment) {
 		this.ailment = ailment;
 	}
 
