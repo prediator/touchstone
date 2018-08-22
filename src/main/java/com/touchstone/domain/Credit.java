@@ -15,7 +15,7 @@ public class Credit implements Serializable {
 
 	private String path;
 
-	private Reportdate reportdate;
+	private String reportdate;
 
 	private String userId;
 
@@ -27,11 +27,11 @@ public class Credit implements Serializable {
 		this.path = path;
 	}
 
-	public Reportdate getReportdate() {
+	public String getReportdate() {
 		return reportdate;
 	}
 
-	public void setReportdate(Reportdate reportdate) {
+	public void setReportdate(String reportdate) {
 		this.reportdate = reportdate;
 	}
 
@@ -42,41 +42,4 @@ public class Credit implements Serializable {
 	public void setUserId(String userId) {
 		this.userId = userId;
 	}
-
-	public class Reportdate {
-		private String year;
-		private String month;
-		private String day;
-
-		public String getYear() {
-			return year;
-		}
-
-		public void setYear(String year) {
-			this.year = year;
-		}
-
-		public String getMonth() {
-			return month;
-		}
-
-		public void setMonth(String month) {
-			this.month = month;
-		}
-
-		public String getDay() {
-			return day;
-		}
-
-		public void setDay(String day) {
-			this.day = day;
-		}
-
-		@Override
-		public String toString() {
-			return "Reportdate [year=" + year + ", month=" + month + ", day=" + day + "]";
-		}
-
-	}
-
 }

@@ -4,7 +4,7 @@ import java.io.Serializable;
 
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import com.touchstone.domain.Credit.Reportdate;
+
 
 /**
  * tax
