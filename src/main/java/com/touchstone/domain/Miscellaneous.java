@@ -22,6 +22,8 @@ public class Miscellaneous implements Serializable {
 	private String cost;
 
 	private String userId;
+	
+	private String path;
 
 	public String getTemplate() {
 		return template;
@@ -61,6 +63,14 @@ public class Miscellaneous implements Serializable {
 
 	public void setUserId(String userId) {
 		this.userId = userId;
+	}
+
+	public String getPath() {
+		return path;
+	}
+
+	public void setPath(String path) {
+		this.path = path;
 	}
 
 }

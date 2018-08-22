@@ -165,8 +165,8 @@ public class PersonalAPIResource {
 			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
 
 			tax.setUserId(user.getUserId());
-
-			uploadFileToS3(file, user.getUserId(), "taxpaid");
+			if(file !=null)
+				uploadFileToS3(file, user.getUserId(), "taxpaid");
 			taxRepository.save(tax);
 
 			return new ResponseEntity(HttpStatus.CREATED);
@@ -198,7 +198,8 @@ public class PersonalAPIResource {
 			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
 
 			credit.setUserId(user.getUserId());
-			uploadFileToS3(file, user.getUserId(), "credit");
+			if(file !=null)
+				uploadFileToS3(file, user.getUserId(), "credit");
 			creditRepository.save(credit);
 
 			return new ResponseEntity(HttpStatus.CREATED);
@@ -230,7 +231,8 @@ public class PersonalAPIResource {
 			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
 
 			bank.setUserId(user.getUserId());
-			uploadFileToS3(file, user.getUserId(), "bank");
+			if(file !=null)
+				uploadFileToS3(file, user.getUserId(), "bank");
 			bankRepository.save(bank);
 
 			return new ResponseEntity(HttpStatus.CREATED);
@@ -262,7 +264,8 @@ public class PersonalAPIResource {
 			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
 
 			property.setUserId(user.getUserId());
-			uploadFileToS3(file, user.getUserId(), "property");
+			if(file !=null)
+				uploadFileToS3(file, user.getUserId(), "property");
 			propertyRepository.save(property);
 
 			return new ResponseEntity(HttpStatus.CREATED);
@@ -294,7 +297,8 @@ public class PersonalAPIResource {
 			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
 
 			property.setUserId(user.getUserId());
-			uploadFileToS3(file, user.getUserId(), "ious");
+			if(file !=null)
+				uploadFileToS3(file, user.getUserId(), "ious");
 			iousRepository.save(property);
 
 			return new ResponseEntity(HttpStatus.CREATED);
@@ -326,7 +330,8 @@ public class PersonalAPIResource {
 			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
 
 			property.setUserId(user.getUserId());
-			uploadFileToS3(file, user.getUserId(), "awards");
+			if(file !=null)
+				uploadFileToS3(file, user.getUserId(), "awards");
 			awardsRepository.save(property);
 
 			return new ResponseEntity(HttpStatus.CREATED);
@@ -358,7 +363,8 @@ public class PersonalAPIResource {
 			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
 
 			property.setUserId(user.getUserId());
-			uploadFileToS3(file, user.getUserId(), "miscellaneous");
+			if(file !=null)
+				uploadFileToS3(file, user.getUserId(), "miscellaneous");
 			miscellaneousRepository.save(property);
 
 			return new ResponseEntity(HttpStatus.CREATED);
@@ -390,7 +396,8 @@ public class PersonalAPIResource {
 			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
 
 			property.setUserId(user.getUserId());
-			uploadFileToS3(file, user.getUserId(), "insurance");
+			if(file !=null)
+				uploadFileToS3(file, user.getUserId(), "insurance");
 			insuranceRepository.save(property);
 
 			return new ResponseEntity(HttpStatus.CREATED);
