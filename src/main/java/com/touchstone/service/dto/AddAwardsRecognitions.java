@@ -1,10 +1,9 @@
-
 package com.touchstone.service.dto;
 
-public class AddIous {
+public class AddAwardsRecognitions {
 
-	private String $class = "org.touchstone.basic.addIous";
-	private Ious ious;
+	private String $class = "org.touchstone.basic.addAwardsRecognitions";
+	private AwardsRecognitions awardsRecognitions;
 	private String personalRecords;
 
 	public String get$class() {
@@ -15,12 +14,12 @@ public class AddIous {
 		this.$class = $class;
 	}
 
-	public Ious getIous() {
-		return ious;
+	public AwardsRecognitions getAwardsRecognitions() {
+		return awardsRecognitions;
 	}
 
-	public void setIous(Ious ious) {
-		this.ious = ious;
+	public void setAwardsRecognitions(AwardsRecognitions awardsRecognitions) {
+		this.awardsRecognitions = awardsRecognitions;
 	}
 
 	public String getPersonalRecords() {

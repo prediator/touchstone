@@ -1,12 +1,12 @@
 package com.touchstone.service.dto;
 
-public class Ious {
-
-	private String $class = "org.touchstone.basic.Ious";
-	private String iousId;
+public class InsuranceDetails_ {
+	private String $class = "org.touchstone.basic.InsuranceDetails";
+	private String insuranceDetailsId;
 	private String path;
+	private Boolean template;
 	private String type;
-	private String area;
+	private String maturitydate;
 	private String amount;
 	private Validation validation;
 
@@ -18,12 +18,12 @@ public class Ious {
 		this.$class = $class;
 	}
 
-	public String getIousId() {
-		return iousId;
+	public String getInsuranceDetailsId() {
+		return insuranceDetailsId;
 	}
 
-	public void setIousId(String iousId) {
-		this.iousId = iousId;
+	public void setInsuranceDetailsId(String insuranceDetailsId) {
+		this.insuranceDetailsId = insuranceDetailsId;
 	}
 
 	public String getPath() {
@@ -34,6 +34,14 @@ public class Ious {
 		this.path = path;
 	}
 
+	public Boolean getTemplate() {
+		return template;
+	}
+
+	public void setTemplate(Boolean template) {
+		this.template = template;
+	}
+
 	public String getType() {
 		return type;
 	}
@@ -42,12 +50,12 @@ public class Ious {
 		this.type = type;
 	}
 
-	public String getArea() {
-		return area;
+	public String getMaturitydate() {
+		return maturitydate;
 	}
 
-	public void setArea(String area) {
-		this.area = area;
+	public void setMaturitydate(String maturitydate) {
+		this.maturitydate = maturitydate;
 	}
 
 	public String getAmount() {

@@ -1,10 +1,9 @@
-
 package com.touchstone.service.dto;
 
-public class AddIous {
+public class AddInsuranceDetails {
 
-	private String $class = "org.touchstone.basic.addIous";
-	private Ious ious;
+	private String $class = "org.touchstone.basic.addInsuranceDetails";
+	private InsuranceDetails_ insuranceDetails;
 	private String personalRecords;
 
 	public String get$class() {
@@ -15,12 +14,12 @@ public class AddIous {
 		this.$class = $class;
 	}
 
-	public Ious getIous() {
-		return ious;
+	public InsuranceDetails_ getInsuranceDetails() {
+		return insuranceDetails;
 	}
 
-	public void setIous(Ious ious) {
-		this.ious = ious;
+	public void setInsuranceDetails(InsuranceDetails_ insuranceDetails) {
+		this.insuranceDetails = insuranceDetails;
 	}
 
 	public String getPersonalRecords() {
