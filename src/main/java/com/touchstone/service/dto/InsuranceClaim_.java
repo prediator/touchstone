@@ -14,7 +14,7 @@ public class InsuranceClaim_ {
 	private String diagnosis = "";
 	private String dateOfInsurance = "";
 	private String policyNo = "";
-	private String dateOfAdmition = "";
+	private String dateOfAdmission = "";
 	private List<String> claimreports = null;
 	private List<String> ailment = null;
 	private Validation validation;
@@ -99,12 +99,12 @@ public class InsuranceClaim_ {
 		this.policyNo = policyNo;
 	}
 
-	public String getDateOfAdmition() {
-		return dateOfAdmition;
+	public String getDateOfAdmission() {
+		return dateOfAdmission;
 	}
 
-	public void setDateOfAdmition(String dateOfAdmition) {
-		this.dateOfAdmition = dateOfAdmition;
+	public void setDateOfAdmission(String dateOfAdmission) {
+		this.dateOfAdmission = dateOfAdmission;
 	}
 
 	public List<String> getClaimreports() {

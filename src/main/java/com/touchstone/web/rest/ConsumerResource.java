@@ -53,6 +53,7 @@ import com.touchstone.service.dto.ConsumerDTO;
 import com.touchstone.service.dto.Enterprise;
 import com.touchstone.service.dto.EnterpriseDTO;
 import com.touchstone.service.dto.Health;
+import com.touchstone.service.dto.Personal;
 import com.touchstone.service.dto.Profile;
 import com.touchstone.service.dto.Update;
 import com.touchstone.service.dto.Validation;
@@ -108,6 +109,7 @@ public class ConsumerResource {
 
 		String profileId = RandomUtil.generateActivationKey();
 		String medicalId = RandomUtil.generateActivationKey();
+		String personalId = RandomUtil.generateActivationKey();
 
 		User data = new User();
 
@@ -121,6 +123,7 @@ public class ConsumerResource {
 		data.setLangKey(consumer.getLangKey());
 		data.setProfileId(profileId);
 		data.setHealthId(medicalId);
+		data.setPersonalId(personalId);
 		userRepository.findOneByEmailIgnoreCase(data.getEmail()).ifPresent(u -> {
 			throw new EmailAlreadyUsedException();
 		});
@@ -159,11 +162,20 @@ public class ConsumerResource {
 		rt = new RestTemplate();
 		rt.getMessageConverters().add(new StringHttpMessageConverter());
 		uri = new String(Constants.Url + "/Health");
-		
-		ObjectMapper mappers = new ObjectMapper();
-		String jsonInString = mappers.writeValueAsString(health);
-		System.out.println(jsonInString);
 		rt.postForObject(uri, health, Health.class);
+		
+		Personal personal = new Personal();
+		personal.setUser("resource:org.touchstone.basic.Consumer#" + personalId);
+		personal.setPersonalId(personalId);
+		
+		rt = new RestTemplate();
+		rt.getMessageConverters().add(new StringHttpMessageConverter());
+		uri = new String(Constants.Url + "/PersonalRecords");
+		rt.postForObject(uri, personal, Personal.class);
+		ObjectMapper mappers = new ObjectMapper();
+		String jsonInString = mappers.writeValueAsString(personal);
+		System.out.println(jsonInString);
+		
 
 		mailService.sendEmail(
 				data.getEmail(), "Account Created", "http://ridgelift.io:8080/api/verifyc/"

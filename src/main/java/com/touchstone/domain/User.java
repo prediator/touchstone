@@ -94,11 +94,22 @@ public class User implements Serializable {
 	@Field("health_id")
 	private String healthId;
 
+	@Field("personal_id")
+	private String personalId;
+
 	@JsonIgnore
 	private Set<Authority> authorities = new HashSet<>();
 
 	public String getHealthId() {
 		return healthId;
+	}
+
+	public String getPersonalId() {
+		return personalId;
+	}
+
+	public void setPersonalId(String personalId) {
+		this.personalId = personalId;
 	}
 
 	public void setHealthId(String healthId) {
