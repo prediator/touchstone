@@ -137,12 +137,13 @@ public class PersonalAPIResource {
 	@ResponseStatus(HttpStatus.CREATED)
 	public ResponseEntity<List<PersonalRecords>> getPersonalRecords(Principal login) {
 
-		//User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
+		User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
 		RestTemplate rt = new RestTemplate();
-		String uri = new String(Constants.Url + "/queries/selectPersonalRecordByPersonalRecordId?personalId=19645830942473406206"  );
+		String uri = new String(Constants.Url + "/queries/selectPersonalRecordByPersonalRecordId?personalId=" + user.getPersonalId());
 
 		List<PersonalRecords> data = rt.getForObject(uri, List.class);
 
+		System.out.println(data);
 		return new ResponseEntity<List<PersonalRecords>>(data, HttpStatus.ACCEPTED);
 	}
 
