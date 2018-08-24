@@ -7,15 +7,15 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 public class HealthCare {
 
 	private String $class = "org.touchstone.basic.HealthCare";
-	private String healthCareId;
-	private String bloodGroup;
-	private String height;
-	private String weight;
-	private String sugar;
-	private String healthReportTypeName;
-	private String bloodPressure;
-	private String dateOfReport;
-	private Boolean needCheckUpReminder;
+	private String healthCareId = "";
+	private String bloodGroup = "";
+	private String height = "";
+	private String weight = "";
+	private String sugar = "";
+	private String healthReportTypeName = "";
+	private String bloodPressure = "";
+	private String dateOfReport = "";
+	private Boolean needCheckUpReminder = false;
 	private List<String> reportReference = null;
 
 	private Validation validation;

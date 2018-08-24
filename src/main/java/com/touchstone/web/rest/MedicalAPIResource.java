@@ -10,6 +10,7 @@ import java.util.List;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -18,6 +19,7 @@ import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -52,7 +54,7 @@ import com.touchstone.service.dto.HealthCareReport;
 import com.touchstone.service.dto.HealthCareReport_;
 import com.touchstone.service.dto.InsuranceClaim;
 import com.touchstone.service.dto.InsuranceClaim_;
-import com.touchstone.service.dto.InsuranceDetails;
+import com.touchstone.service.dto.MedicalValidation;
 import com.touchstone.service.dto.Validation;
 import com.touchstone.service.util.RandomUtil;
 import com.touchstone.web.rest.util.GenerateOTP;
@@ -90,6 +92,48 @@ public class MedicalAPIResource {
 
 		System.out.println(data);
 		return new ResponseEntity<List<Health>>(data, HttpStatus.ACCEPTED);
+
+	}
+
+	@PostMapping("/healthrecordsvalidate")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public void validateMedical(@RequestBody MedicalValidation medicalValidation, Principal login) {
+		User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
+
+		try {
+			if (StringUtils.equals(medicalValidation.getType(), "healthInfo")) {
+				AddHealthCare addHealthCare = new AddHealthCare();
+				addHealthCare.set$class("org.touchstone.basic.addHealthCare");
+				addHealthCare.setHealth("resource:org.touchstone.basic.Health#" + user.getHealthId());
+
+				HealthCare health = new HealthCare();
+				health.setHealthCareId("74045282067339526837");
+				health.setReportReference(new ArrayList<>());
+				Validation valid = new Validation();
+				valid.set$class("org.touchstone.basic.Validation");
+				valid.setValidationStatus("IN_PROGRESS");
+				valid.setValidationType("MANUAL");
+				valid.setValidationBy("");
+				valid.setValidationDate("");
+				valid.setValidationEmail("");
+				valid.setValidationNote("");
+				health.setValidation(valid);
+
+				addHealthCare.setHealthCare(health);
+
+				ObjectMapper mappers = new ObjectMapper();
+				String jsonInString = mappers.writeValueAsString(addHealthCare);
+				System.out.println(jsonInString);
+
+				RestTemplate rt = new RestTemplate();
+				rt.getMessageConverters().add(new StringHttpMessageConverter());
+				String uri = new String(Constants.Url + "/validateHealthCare");
+				rt.postForObject(uri, addHealthCare, AddHealthCare.class);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 
 	}
 

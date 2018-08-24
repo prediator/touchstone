@@ -70,6 +70,7 @@ import com.touchstone.service.dto.CreditReport;
 import com.touchstone.service.dto.Documents;
 import com.touchstone.service.dto.InsuranceDetails_;
 import com.touchstone.service.dto.MiscellaneousAssetDetails;
+import com.touchstone.service.dto.PersonalRecords;
 import com.touchstone.service.dto.PropertyDetails;
 import com.touchstone.service.dto.TaxDetails;
 import com.touchstone.service.dto.Validation;
@@ -129,6 +130,22 @@ public class PersonalAPIResource {
 		this.personalRepository = personalRepository;
 		this.personalService = personalService;
 	}
+	
+	
+	@GetMapping("/getPersonalRecords")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public ResponseEntity<List<PersonalRecords>> getPersonalRecords(Principal login) {
+
+		//User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
+		RestTemplate rt = new RestTemplate();
+		String uri = new String(Constants.Url + "/queries/selectPersonalRecordByPersonalRecordId?personalId=19645830942473406206"  );
+
+		List<PersonalRecords> data = rt.getForObject(uri, List.class);
+
+		return new ResponseEntity<List<PersonalRecords>>(data, HttpStatus.ACCEPTED);
+	}
+
 
 	@PostMapping("/aadharlicensetax")
 	@Timed
