@@ -8,6 +8,15 @@ public class MedicalValidation {
 	private String type;
 	private String slno;
 	private String url;
+	private String path;
+
+	public String getPath() {
+		return path;
+	}
+
+	public void setPath(String path) {
+		this.path = path;
+	}
 
 	public String getValidationBy() {
 		return validationBy;

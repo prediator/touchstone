@@ -3,23 +3,37 @@ package com.touchstone.web.rest;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.security.Principal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
+import javax.mail.internet.MimeMessage;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.StringHttpMessageConverter;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
+import org.thymeleaf.context.Context;
+import org.thymeleaf.spring4.SpringTemplateEngine;
 
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.auth.AWSCredentials;
@@ -69,6 +83,7 @@ import com.touchstone.service.dto.BankDetails;
 import com.touchstone.service.dto.CreditReport;
 import com.touchstone.service.dto.Documents;
 import com.touchstone.service.dto.InsuranceDetails_;
+import com.touchstone.service.dto.MedicalValidation;
 import com.touchstone.service.dto.MiscellaneousAssetDetails;
 import com.touchstone.service.dto.PersonalRecords;
 import com.touchstone.service.dto.PropertyDetails;
@@ -76,6 +91,8 @@ import com.touchstone.service.dto.TaxDetails;
 import com.touchstone.service.dto.Validation;
 import com.touchstone.service.util.RandomUtil;
 import com.touchstone.web.rest.util.GenerateOTP;
+
+import io.github.jhipster.config.JHipsterProperties;
 
 /**
  * REST controller for adding certificate, Education, Experience, Project,
@@ -111,12 +128,18 @@ public class PersonalAPIResource {
 	private MiscellaneousRepository miscellaneousRepository;
 
 	private PersonalService personalService;
+	private final SpringTemplateEngine templateEngine;
+	private final MessageSource messageSource;
+	private final JHipsterProperties jHipsterProperties;
+
+	private final JavaMailSender javaMailSender;
 
 	public PersonalAPIResource(UserService userService, MailService mailService, TaxRepository taxRepository,
 			CreditRepository creditRepository, BankRepository bankRepository, PropertyRepository propertyRepository,
 			IousRepository iousRepository, AwardsRepository awardsRepository, InsuranceRepository insuranceRepository,
 			MiscellaneousRepository miscellaneousRepository, PersonalRepository personalRepository,
-			PersonalService personalService) {
+			PersonalService personalService, SpringTemplateEngine templateEngine, MessageSource messageSource,
+			JHipsterProperties jHipsterProperties, JavaMailSender javaMailSender) {
 		this.userService = userService;
 		this.mailService = mailService;
 		this.taxRepository = taxRepository;
@@ -129,9 +152,574 @@ public class PersonalAPIResource {
 		this.miscellaneousRepository = miscellaneousRepository;
 		this.personalRepository = personalRepository;
 		this.personalService = personalService;
+		this.templateEngine = templateEngine;
+		this.messageSource = messageSource;
+		this.jHipsterProperties = jHipsterProperties;
+		this.javaMailSender = javaMailSender;
 	}
-	
-	
+
+	@GetMapping("/personalrecordsvalidate/{otp}/{slno}/{uname}/{email}/{type}")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public ResponseEntity<Map<String, String>> validateMedicalNew(@PathVariable Integer otp, @PathVariable String slno,
+			@PathVariable String uname, @PathVariable String email, @PathVariable String type)
+			throws JsonProcessingException {
+		User user = userService.getUserWithAuthoritiesByLogin(uname).get();
+
+		if (generateOtp.checkOTP(email, otp) == 1) {
+			if (StringUtils.equals(type, "taxPaid")) {
+				AddTaxDetails addTaxDetails = new AddTaxDetails();
+				addTaxDetails
+						.setPersonalRecords("resource:org.touchstone.basic.PersonalRecords#" + user.getPersonalId());
+				addTaxDetails.set$class("org.touchstone.basic.validateTaxDetails");
+				TaxDetails taxDetails = new TaxDetails();
+				taxDetails.setPath("");
+				taxDetails.setTaxDetailsId(slno);
+				taxDetails.setTaxPaid("");
+
+				Validation valid = new Validation();
+				valid.set$class("org.touchstone.basic.Validation");
+				valid.setValidationStatus("IN_PROGRESS");
+				valid.setValidationType("MANUAL");
+				valid.setValidationBy("");
+				valid.setValidationDate("");
+				valid.setValidationEmail("");
+				valid.setValidationNote("");
+				taxDetails.setValidation(valid);
+
+				addTaxDetails.setTaxDetails(taxDetails);
+
+				ObjectMapper mappers = new ObjectMapper();
+				String jsonInString = mappers.writeValueAsString(addTaxDetails);
+				System.out.println(jsonInString);
+
+				RestTemplate rt = new RestTemplate();
+				rt.getMessageConverters().add(new StringHttpMessageConverter());
+				String uri = new String(Constants.Url + "/validateTaxDetails");
+				rt.postForObject(uri, addTaxDetails, AddTaxDetails.class);
+				;
+
+			} else if (StringUtils.equals(type, "creditReport")) {
+				AddCreditReport addCreditReport = new AddCreditReport();
+				addCreditReport
+						.setPersonalRecords("resource:org.touchstone.basic.PersonalRecords#" + user.getPersonalId());
+				addCreditReport.set$class("org.touchstone.basic.validateCreditReport");
+				CreditReport creditReport = new CreditReport();
+				creditReport.setCreditReportId(slno);
+				creditReport.setPath("");
+				creditReport.setReportdate("");
+
+				Validation valid = new Validation();
+				valid.set$class("org.touchstone.basic.Validation");
+				valid.setValidationStatus("IN_PROGRESS");
+				valid.setValidationType("MANUAL");
+				valid.setValidationBy("");
+				valid.setValidationDate("");
+				valid.setValidationEmail("");
+				valid.setValidationNote("");
+				creditReport.setValidation(valid);
+
+				addCreditReport.setCreditReport(creditReport);
+
+				RestTemplate rt = new RestTemplate();
+				rt.getMessageConverters().add(new StringHttpMessageConverter());
+				String uri = new String(Constants.Url + "/validateCreditReport");
+				rt.postForObject(uri, addCreditReport, AddCreditReport.class);
+
+				ObjectMapper mappers = new ObjectMapper();
+				String jsonInString = mappers.writeValueAsString(addCreditReport);
+				System.out.println(jsonInString);
+			} else if (StringUtils.equals(type, "bank")) {
+				AddBankDetails addBankDetails = new AddBankDetails();
+				addBankDetails
+						.setPersonalRecords("resource:org.touchstone.basic.PersonalRecords#" + user.getPersonalId());
+				addBankDetails.set$class("org.touchstone.basic.validateBankDetails");
+				BankDetails bankDetails = new BankDetails();
+				bankDetails.setAccholder("");
+				bankDetails.setAccountno("");
+				bankDetails.setBankDetailsId(slno);
+				bankDetails.setBankname("");
+				bankDetails.setBranch("");
+				bankDetails.setIfsc("");
+				bankDetails.setPath("");
+
+				Validation valid = new Validation();
+				valid.set$class("org.touchstone.basic.Validation");
+				valid.setValidationStatus("IN_PROGRESS");
+				valid.setValidationType("MANUAL");
+				valid.setValidationBy("");
+				valid.setValidationDate("");
+				valid.setValidationEmail("");
+				valid.setValidationNote("");
+				bankDetails.setValidation(valid);
+				addBankDetails.setBankDetails(bankDetails);
+
+				ObjectMapper mappers = new ObjectMapper();
+				String jsonInString = mappers.writeValueAsString(addBankDetails);
+				System.out.println(jsonInString);
+
+				RestTemplate rt = new RestTemplate();
+				rt.getMessageConverters().add(new StringHttpMessageConverter());
+				String uri = new String(Constants.Url + "/validateBankDetails");
+				rt.postForObject(uri, addBankDetails, AddBankDetails.class);
+			} else if (StringUtils.equals(type, "property")) {
+				AddPropertyDetails addPropertyDetails = new AddPropertyDetails();
+				addPropertyDetails
+						.setPersonalRecords("resource:org.touchstone.basic.PersonalRecords#" + user.getPersonalId());
+				addPropertyDetails.set$class("org.touchstone.basic.validatePropertyDetails");
+				PropertyDetails propertyDetails = new PropertyDetails();
+				propertyDetails.setAddress("");
+				propertyDetails.setArea("");
+				propertyDetails.setPath("");
+				propertyDetails.setPropertyDetailsId(slno);
+				propertyDetails.setType("");
+
+				Validation valid = new Validation();
+				valid.set$class("org.touchstone.basic.Validation");
+				valid.setValidationStatus("IN_PROGRESS");
+				valid.setValidationType("MANUAL");
+				valid.setValidationBy("");
+				valid.setValidationDate("");
+				valid.setValidationEmail("");
+				valid.setValidationNote("");
+
+				propertyDetails.setValidation(valid);
+				addPropertyDetails.setPropertyDetails(propertyDetails);
+
+				ObjectMapper mappers = new ObjectMapper();
+				String jsonInString = mappers.writeValueAsString(addPropertyDetails);
+				System.out.println(jsonInString);
+
+				RestTemplate rt = new RestTemplate();
+				rt.getMessageConverters().add(new StringHttpMessageConverter());
+				String uri = new String(Constants.Url + "/validatePropertyDetails");
+				rt.postForObject(uri, addPropertyDetails, AddPropertyDetails.class);
+			} else if (StringUtils.equals(type, "ious")) {
+				AddIous addIous = new AddIous();
+				addIous.setPersonalRecords("resource:org.touchstone.basic.PersonalRecords#" + user.getPersonalId());
+				com.touchstone.service.dto.Ious ious = new com.touchstone.service.dto.Ious();
+				addIous.set$class("org.touchstone.basic.validateIous");
+				ious.setAmount("");
+				ious.setArea("");
+				ious.setPath("");
+				ious.setType("");
+				ious.setIousId(slno);
+
+				Validation valid = new Validation();
+				valid.set$class("org.touchstone.basic.Validation");
+				valid.setValidationStatus("IN_PROGRESS");
+				valid.setValidationType("MANUAL");
+				valid.setValidationBy("");
+				valid.setValidationDate("");
+				valid.setValidationEmail("");
+				valid.setValidationNote("");
+
+				ious.setValidation(valid);
+				addIous.setIous(ious);
+
+				ObjectMapper mappers = new ObjectMapper();
+				String jsonInString = mappers.writeValueAsString(addIous);
+				System.out.println(jsonInString);
+
+				RestTemplate rt = new RestTemplate();
+				rt.getMessageConverters().add(new StringHttpMessageConverter());
+				String uri = new String(Constants.Url + "/validateIous");
+				rt.postForObject(uri, addIous, AddIous.class);
+			} else if (StringUtils.equals(type, "awards")) {
+				AddAwardsRecognitions addAwardsRecognitions = new AddAwardsRecognitions();
+				addAwardsRecognitions
+						.setPersonalRecords("resource:org.touchstone.basic.PersonalRecords#" + user.getPersonalId());
+				addAwardsRecognitions.set$class("org.touchstone.basic.validateAwardsRecognitions");
+				AwardsRecognitions awardsRecognitions = new AwardsRecognitions();
+				awardsRecognitions.setAwardsRecognitionsId(slno);
+				awardsRecognitions.setIssuer("");
+				awardsRecognitions.setMonth("");
+				awardsRecognitions.setNarration("");
+				awardsRecognitions.setPath("");
+				awardsRecognitions.setTitle("");
+				awardsRecognitions.setYear("");
+
+				Validation valid = new Validation();
+				valid.set$class("org.touchstone.basic.Validation");
+				valid.setValidationStatus("IN_PROGRESS");
+				valid.setValidationType("MANUAL");
+				valid.setValidationBy("");
+				valid.setValidationDate("");
+				valid.setValidationEmail("");
+				valid.setValidationNote("");
+				awardsRecognitions.setValidation(valid);
+
+				addAwardsRecognitions.setAwardsRecognitions(awardsRecognitions);
+
+				ObjectMapper mappers = new ObjectMapper();
+				String jsonInString = mappers.writeValueAsString(addAwardsRecognitions);
+				System.out.println(jsonInString);
+
+				RestTemplate rt = new RestTemplate();
+				rt.getMessageConverters().add(new StringHttpMessageConverter());
+				String uri = new String(Constants.Url + "/validateAwardsRecognitions");
+				rt.postForObject(uri, addAwardsRecognitions, AddAwardsRecognitions.class);
+			} else if (StringUtils.equals(type, "insurance")) {
+				AddInsuranceDetails addInsuranceDetails = new AddInsuranceDetails();
+
+				addInsuranceDetails
+						.setPersonalRecords("resource:org.touchstone.basic.PersonalRecords#" + user.getPersonalId());
+				addInsuranceDetails.set$class("org.touchstone.basic.validateInsuranceDetails");
+				InsuranceDetails_ insuranceDetails_ = new InsuranceDetails_();
+				insuranceDetails_.setAmount("");
+				insuranceDetails_.setInsuranceDetailsId(slno);
+				insuranceDetails_.setMaturitydate("");
+				insuranceDetails_.setPath("");
+				insuranceDetails_.setTemplate(Boolean.valueOf(""));
+				insuranceDetails_.setType("");
+
+				Validation valid = new Validation();
+				valid.set$class("org.touchstone.basic.Validation");
+				valid.setValidationStatus("IN_PROGRESS");
+				valid.setValidationType("MANUAL");
+				valid.setValidationBy("");
+				valid.setValidationDate("");
+				valid.setValidationEmail("");
+				valid.setValidationNote("");
+				insuranceDetails_.setValidation(valid);
+				addInsuranceDetails.setInsuranceDetails(insuranceDetails_);
+
+				ObjectMapper mappers = new ObjectMapper();
+				String jsonInString = mappers.writeValueAsString(addInsuranceDetails);
+				System.out.println(jsonInString);
+
+				RestTemplate rt = new RestTemplate();
+				rt.getMessageConverters().add(new StringHttpMessageConverter());
+				String uri = new String(Constants.Url + "/validateInsuranceDetails");
+				rt.postForObject(uri, addInsuranceDetails, AddInsuranceDetails.class);
+			} else if (StringUtils.equals(type, "miscellaneous")) {
+				AddMiscellaneousAssetDetails addMiscellaneousAssetDetails = new AddMiscellaneousAssetDetails();
+				addMiscellaneousAssetDetails
+						.setPersonalRecords("resource:org.touchstone.basic.PersonalRecords#" + user.getPersonalId());
+				addMiscellaneousAssetDetails.set$class("org.touchstone.basic.validateMiscellaneousAssetDetails");
+
+				MiscellaneousAssetDetails miscellaneousAssetDetails = new MiscellaneousAssetDetails();
+				miscellaneousAssetDetails.setCost("");
+				miscellaneousAssetDetails.setMakeAndModel("");
+				miscellaneousAssetDetails.setMiscellaneousAssetDetailsId(slno);
+				miscellaneousAssetDetails.setPath("");
+				miscellaneousAssetDetails.setTemplate(false);
+				miscellaneousAssetDetails.setType("");
+
+				Validation valid = new Validation();
+				valid.set$class("org.touchstone.basic.Validation");
+				valid.setValidationStatus("IN_PROGRESS");
+				valid.setValidationType("MANUAL");
+				valid.setValidationBy("");
+				valid.setValidationDate("");
+				valid.setValidationEmail("");
+				valid.setValidationNote("");
+				miscellaneousAssetDetails.setValidation(valid);
+
+				addMiscellaneousAssetDetails.setMiscellaneousAssetDetails(miscellaneousAssetDetails);
+
+				ObjectMapper mappers = new ObjectMapper();
+				String jsonInString = mappers.writeValueAsString(addMiscellaneousAssetDetails);
+				System.out.println(jsonInString);
+
+				RestTemplate rt = new RestTemplate();
+				rt.getMessageConverters().add(new StringHttpMessageConverter());
+				String uri = new String(Constants.Url + "/validateMiscellaneousAssetDetails");
+				rt.postForObject(uri, addMiscellaneousAssetDetails, AddMiscellaneousAssetDetails.class);
+				generateOtp.removeOtp(email);
+
+				Map<String, String> data = new HashMap<>();
+				data.put("status", "success");
+				return new ResponseEntity<Map<String, String>>(data, HttpStatus.ACCEPTED);
+			} else {
+				return new ResponseEntity<Map<String, String>>(HttpStatus.UNAUTHORIZED);
+			}
+		}
+		return null;
+
+	}
+
+	@PostMapping("/personalrecordsvalidate")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public void validateMedical(@RequestBody MedicalValidation medicalValidation, Principal login)
+			throws JsonProcessingException {
+		User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
+
+		if (StringUtils.equals(medicalValidation.getType(), "taxPaid")) {
+			AddTaxDetails addTaxDetails = new AddTaxDetails();
+			addTaxDetails.setPersonalRecords("resource:org.touchstone.basic.PersonalRecords#" + user.getPersonalId());
+			addTaxDetails.set$class("org.touchstone.basic.validateTaxDetails");
+			TaxDetails taxDetails = new TaxDetails();
+			taxDetails.setPath("");
+			taxDetails.setTaxDetailsId(medicalValidation.getSlno());
+			taxDetails.setTaxPaid("");
+
+			Validation valid = new Validation();
+			valid.set$class("org.touchstone.basic.Validation");
+			valid.setValidationStatus("IN_PROGRESS");
+			valid.setValidationType("MANUAL");
+			valid.setValidationBy("");
+			valid.setValidationDate("");
+			valid.setValidationEmail("");
+			valid.setValidationNote("");
+			taxDetails.setValidation(valid);
+
+			addTaxDetails.setTaxDetails(taxDetails);
+
+			ObjectMapper mappers = new ObjectMapper();
+			String jsonInString = mappers.writeValueAsString(addTaxDetails);
+			System.out.println(jsonInString);
+
+			RestTemplate rt = new RestTemplate();
+			rt.getMessageConverters().add(new StringHttpMessageConverter());
+			String uri = new String(Constants.Url + "/validateTaxDetails");
+			rt.postForObject(uri, addTaxDetails, AddTaxDetails.class);
+			;
+
+		} else if (StringUtils.equals(medicalValidation.getType(), "creditReport")) {
+			AddCreditReport addCreditReport = new AddCreditReport();
+			addCreditReport.setPersonalRecords("resource:org.touchstone.basic.PersonalRecords#" + user.getPersonalId());
+			addCreditReport.set$class("org.touchstone.basic.validateCreditReport");
+			CreditReport creditReport = new CreditReport();
+			creditReport.setCreditReportId(medicalValidation.getSlno());
+			creditReport.setPath("");
+			creditReport.setReportdate("");
+
+			Validation valid = new Validation();
+			valid.set$class("org.touchstone.basic.Validation");
+			valid.setValidationStatus("IN_PROGRESS");
+			valid.setValidationType("MANUAL");
+			valid.setValidationBy("");
+			valid.setValidationDate("");
+			valid.setValidationEmail("");
+			valid.setValidationNote("");
+			creditReport.setValidation(valid);
+
+			addCreditReport.setCreditReport(creditReport);
+
+			RestTemplate rt = new RestTemplate();
+			rt.getMessageConverters().add(new StringHttpMessageConverter());
+			String uri = new String(Constants.Url + "/validateCreditReport");
+			rt.postForObject(uri, addCreditReport, AddCreditReport.class);
+
+			ObjectMapper mappers = new ObjectMapper();
+			String jsonInString = mappers.writeValueAsString(addCreditReport);
+			System.out.println(jsonInString);
+		} else if (StringUtils.equals(medicalValidation.getType(), "bank")) {
+			AddBankDetails addBankDetails = new AddBankDetails();
+			addBankDetails.setPersonalRecords("resource:org.touchstone.basic.PersonalRecords#" + user.getPersonalId());
+			addBankDetails.set$class("org.touchstone.basic.validateBankDetails");
+			BankDetails bankDetails = new BankDetails();
+			bankDetails.setAccholder("");
+			bankDetails.setAccountno("");
+			bankDetails.setBankDetailsId(medicalValidation.getSlno());
+			bankDetails.setBankname("");
+			bankDetails.setBranch("");
+			bankDetails.setIfsc("");
+			bankDetails.setPath("");
+
+			Validation valid = new Validation();
+			valid.set$class("org.touchstone.basic.Validation");
+			valid.setValidationStatus("IN_PROGRESS");
+			valid.setValidationType("MANUAL");
+			valid.setValidationBy("");
+			valid.setValidationDate("");
+			valid.setValidationEmail("");
+			valid.setValidationNote("");
+			bankDetails.setValidation(valid);
+			addBankDetails.setBankDetails(bankDetails);
+
+			ObjectMapper mappers = new ObjectMapper();
+			String jsonInString = mappers.writeValueAsString(addBankDetails);
+			System.out.println(jsonInString);
+
+			RestTemplate rt = new RestTemplate();
+			rt.getMessageConverters().add(new StringHttpMessageConverter());
+			String uri = new String(Constants.Url + "/validateBankDetails");
+			rt.postForObject(uri, addBankDetails, AddBankDetails.class);
+		} else if (StringUtils.equals(medicalValidation.getType(), "property")) {
+			AddPropertyDetails addPropertyDetails = new AddPropertyDetails();
+			addPropertyDetails
+					.setPersonalRecords("resource:org.touchstone.basic.PersonalRecords#" + user.getPersonalId());
+			addPropertyDetails.set$class("org.touchstone.basic.validatePropertyDetails");
+			PropertyDetails propertyDetails = new PropertyDetails();
+			propertyDetails.setAddress("");
+			propertyDetails.setArea("");
+			propertyDetails.setPath("");
+			propertyDetails.setPropertyDetailsId(medicalValidation.getSlno());
+			propertyDetails.setType("");
+
+			Validation valid = new Validation();
+			valid.set$class("org.touchstone.basic.Validation");
+			valid.setValidationStatus("IN_PROGRESS");
+			valid.setValidationType("MANUAL");
+			valid.setValidationBy("");
+			valid.setValidationDate("");
+			valid.setValidationEmail("");
+			valid.setValidationNote("");
+
+			propertyDetails.setValidation(valid);
+			addPropertyDetails.setPropertyDetails(propertyDetails);
+
+			ObjectMapper mappers = new ObjectMapper();
+			String jsonInString = mappers.writeValueAsString(addPropertyDetails);
+			System.out.println(jsonInString);
+
+			RestTemplate rt = new RestTemplate();
+			rt.getMessageConverters().add(new StringHttpMessageConverter());
+			String uri = new String(Constants.Url + "/validatePropertyDetails");
+			rt.postForObject(uri, addPropertyDetails, AddPropertyDetails.class);
+		} else if (StringUtils.equals(medicalValidation.getType(), "ious")) {
+			AddIous addIous = new AddIous();
+			addIous.setPersonalRecords("resource:org.touchstone.basic.PersonalRecords#" + user.getPersonalId());
+			com.touchstone.service.dto.Ious ious = new com.touchstone.service.dto.Ious();
+			addIous.set$class("org.touchstone.basic.validateIous");
+			ious.setAmount("");
+			ious.setArea("");
+			ious.setPath("");
+			ious.setType("");
+			ious.setIousId(medicalValidation.getSlno());
+
+			Validation valid = new Validation();
+			valid.set$class("org.touchstone.basic.Validation");
+			valid.setValidationStatus("IN_PROGRESS");
+			valid.setValidationType("MANUAL");
+			valid.setValidationBy("");
+			valid.setValidationDate("");
+			valid.setValidationEmail("");
+			valid.setValidationNote("");
+
+			ious.setValidation(valid);
+			addIous.setIous(ious);
+
+			ObjectMapper mappers = new ObjectMapper();
+			String jsonInString = mappers.writeValueAsString(addIous);
+			System.out.println(jsonInString);
+
+			RestTemplate rt = new RestTemplate();
+			rt.getMessageConverters().add(new StringHttpMessageConverter());
+			String uri = new String(Constants.Url + "/validateIous");
+			rt.postForObject(uri, addIous, AddIous.class);
+		} else if (StringUtils.equals(medicalValidation.getType(), "awards")) {
+			AddAwardsRecognitions addAwardsRecognitions = new AddAwardsRecognitions();
+			addAwardsRecognitions
+					.setPersonalRecords("resource:org.touchstone.basic.PersonalRecords#" + user.getPersonalId());
+			addAwardsRecognitions.set$class("org.touchstone.basic.validateAwardsRecognitions");
+			AwardsRecognitions awardsRecognitions = new AwardsRecognitions();
+			awardsRecognitions.setAwardsRecognitionsId(medicalValidation.getSlno());
+			awardsRecognitions.setIssuer("");
+			awardsRecognitions.setMonth("");
+			awardsRecognitions.setNarration("");
+			awardsRecognitions.setPath("");
+			awardsRecognitions.setTitle("");
+			awardsRecognitions.setYear("");
+
+			Validation valid = new Validation();
+			valid.set$class("org.touchstone.basic.Validation");
+			valid.setValidationStatus("IN_PROGRESS");
+			valid.setValidationType("MANUAL");
+			valid.setValidationBy("");
+			valid.setValidationDate("");
+			valid.setValidationEmail("");
+			valid.setValidationNote("");
+			awardsRecognitions.setValidation(valid);
+
+			addAwardsRecognitions.setAwardsRecognitions(awardsRecognitions);
+
+			ObjectMapper mappers = new ObjectMapper();
+			String jsonInString = mappers.writeValueAsString(addAwardsRecognitions);
+			System.out.println(jsonInString);
+
+			RestTemplate rt = new RestTemplate();
+			rt.getMessageConverters().add(new StringHttpMessageConverter());
+			String uri = new String(Constants.Url + "/validateAwardsRecognitions");
+			rt.postForObject(uri, addAwardsRecognitions, AddAwardsRecognitions.class);
+		} else if (StringUtils.equals(medicalValidation.getType(), "insurance")) {
+			AddInsuranceDetails addInsuranceDetails = new AddInsuranceDetails();
+
+			addInsuranceDetails
+					.setPersonalRecords("resource:org.touchstone.basic.PersonalRecords#" + user.getPersonalId());
+			addInsuranceDetails.set$class("org.touchstone.basic.validateInsuranceDetails");
+			InsuranceDetails_ insuranceDetails_ = new InsuranceDetails_();
+			insuranceDetails_.setAmount("");
+			insuranceDetails_.setInsuranceDetailsId(medicalValidation.getSlno());
+			insuranceDetails_.setMaturitydate("");
+			insuranceDetails_.setPath("");
+			insuranceDetails_.setTemplate(Boolean.valueOf(""));
+			insuranceDetails_.setType("");
+
+			Validation valid = new Validation();
+			valid.set$class("org.touchstone.basic.Validation");
+			valid.setValidationStatus("IN_PROGRESS");
+			valid.setValidationType("MANUAL");
+			valid.setValidationBy("");
+			valid.setValidationDate("");
+			valid.setValidationEmail("");
+			valid.setValidationNote("");
+			insuranceDetails_.setValidation(valid);
+			addInsuranceDetails.setInsuranceDetails(insuranceDetails_);
+
+			ObjectMapper mappers = new ObjectMapper();
+			String jsonInString = mappers.writeValueAsString(addInsuranceDetails);
+			System.out.println(jsonInString);
+
+			RestTemplate rt = new RestTemplate();
+			rt.getMessageConverters().add(new StringHttpMessageConverter());
+			String uri = new String(Constants.Url + "/validateInsuranceDetails");
+			rt.postForObject(uri, addInsuranceDetails, AddInsuranceDetails.class);
+		} else if (StringUtils.equals(medicalValidation.getType(), "miscellaneous")) {
+			AddMiscellaneousAssetDetails addMiscellaneousAssetDetails = new AddMiscellaneousAssetDetails();
+			addMiscellaneousAssetDetails
+					.setPersonalRecords("resource:org.touchstone.basic.PersonalRecords#" + user.getPersonalId());
+			addMiscellaneousAssetDetails.set$class("org.touchstone.basic.validateMiscellaneousAssetDetails");
+
+			MiscellaneousAssetDetails miscellaneousAssetDetails = new MiscellaneousAssetDetails();
+			miscellaneousAssetDetails.setCost("");
+			miscellaneousAssetDetails.setMakeAndModel("");
+			miscellaneousAssetDetails.setMiscellaneousAssetDetailsId(medicalValidation.getSlno());
+			miscellaneousAssetDetails.setPath("");
+			miscellaneousAssetDetails.setTemplate(false);
+			miscellaneousAssetDetails.setType("");
+
+			Validation valid = new Validation();
+			valid.set$class("org.touchstone.basic.Validation");
+			valid.setValidationStatus("IN_PROGRESS");
+			valid.setValidationType("MANUAL");
+			valid.setValidationBy("");
+			valid.setValidationDate("");
+			valid.setValidationEmail("");
+			valid.setValidationNote("");
+			miscellaneousAssetDetails.setValidation(valid);
+
+			addMiscellaneousAssetDetails.setMiscellaneousAssetDetails(miscellaneousAssetDetails);
+
+			ObjectMapper mappers = new ObjectMapper();
+			String jsonInString = mappers.writeValueAsString(addMiscellaneousAssetDetails);
+			System.out.println(jsonInString);
+
+			RestTemplate rt = new RestTemplate();
+			rt.getMessageConverters().add(new StringHttpMessageConverter());
+			String uri = new String(Constants.Url + "/validateMiscellaneousAssetDetails");
+			rt.postForObject(uri, addMiscellaneousAssetDetails, AddMiscellaneousAssetDetails.class);
+		}
+
+		Locale locale = Locale.forLanguageTag("en");
+		Context context = new Context(locale);
+		context.setVariable("by", "Hi " + medicalValidation.getValidationBy());
+		context.setVariable("desc", medicalValidation.getDescription());
+		System.out.println("---------" + medicalValidation);
+		context.setVariable("document", medicalValidation.getUrl());
+		context.setVariable("url",
+				" http://ridgelift.io:8080/api/healthvalidate/" + generateOtp.storeOTP(medicalValidation.getEmail())
+						+ "/" + medicalValidation.getSlno() + "/" + user.getLogin() + "/" + medicalValidation.getEmail()
+						+ "/" + medicalValidation.getType());
+		String content = templateEngine.process("personal", context);
+		String subject = messageSource.getMessage("email.activation.title", null, locale);
+		sendEmail(user.getEmail(), subject, content, false, true);
+
+	}
+
 	@GetMapping("/getPersonalRecords")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
@@ -139,14 +727,13 @@ public class PersonalAPIResource {
 
 		User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
 		RestTemplate rt = new RestTemplate();
-		String uri = new String(Constants.Url + "/queries/selectPersonalRecordByPersonalRecordId?personalId=" + user.getPersonalId());
+		String uri = new String(
+				Constants.Url + "/queries/selectPersonalRecordByPersonalRecordId?personalId=" + user.getPersonalId());
 
 		List<PersonalRecords> data = rt.getForObject(uri, List.class);
 
-		System.out.println(data);
 		return new ResponseEntity<List<PersonalRecords>>(data, HttpStatus.ACCEPTED);
 	}
-
 
 	@PostMapping("/aadharlicensetax")
 	@Timed
@@ -226,8 +813,12 @@ public class PersonalAPIResource {
 
 			String[] links = new String[1];
 
-			links[0] = "https://s3.ap-south-1.amazonaws.com/touchstonebackend/" + user.getUserId() + "/taxpaid/"
-					+ file.getOriginalFilename();
+			if (file != null) {
+				links[0] = "https://s3.ap-south-1.amazonaws.com/touchstonebackend/" + user.getUserId() + "/taxpaid/"
+						+ file.getOriginalFilename();
+			} else {
+				links[0] = "";
+			}
 
 			AddTaxDetails addTaxDetails = new AddTaxDetails();
 			addTaxDetails.setPersonalRecords("resource:org.touchstone.basic.PersonalRecords#" + user.getPersonalId());
@@ -260,12 +851,11 @@ public class PersonalAPIResource {
 
 			tax.setUserId(user.getUserId());
 
-			String fileName = file.getOriginalFilename();
 			File dir = new File(tmpDir);
 
 			dir.mkdirs();
 			if (dir.isDirectory() && file != null) {
-				File serverFile = new File(dir, fileName);
+				File serverFile = new File(dir, file.getOriginalFilename());
 				serverFile.setReadable(true, false);
 				BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(serverFile));
 				stream.write(file.getBytes());
@@ -306,8 +896,13 @@ public class PersonalAPIResource {
 			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
 			String[] links = new String[1];
 
-			links[0] = "https://s3.ap-south-1.amazonaws.com/touchstonebackend/" + user.getUserId() + "/credit/"
-					+ file.getOriginalFilename();
+			if (file != null) {
+				links[0] = "https://s3.ap-south-1.amazonaws.com/touchstonebackend/" + user.getUserId() + "/credit/"
+						+ file.getOriginalFilename();
+			} else {
+				links[0] = "";
+			}
+
 			AddCreditReport addCreditReport = new AddCreditReport();
 			addCreditReport.setPersonalRecords("resource:org.touchstone.basic.PersonalRecords#" + user.getPersonalId());
 
@@ -337,12 +932,11 @@ public class PersonalAPIResource {
 			ObjectMapper mappers = new ObjectMapper();
 			String jsonInString = mappers.writeValueAsString(addCreditReport);
 			System.out.println(jsonInString);
-			String fileName = file.getOriginalFilename();
 			File dir = new File(tmpDir);
 
 			dir.mkdirs();
 			if (dir.isDirectory() && file != null) {
-				File serverFile = new File(dir, fileName);
+				File serverFile = new File(dir, file.getOriginalFilename());
 				serverFile.setReadable(true, false);
 				BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(serverFile));
 				stream.write(file.getBytes());
@@ -383,8 +977,13 @@ public class PersonalAPIResource {
 
 			String id = RandomUtil.generateActivationKey();
 			String[] links = new String[1];
-			links[0] = "https://s3.ap-south-1.amazonaws.com/touchstonebackend/" + user.getUserId() + "/bank/"
-					+ file.getOriginalFilename();
+
+			if (file != null) {
+				links[0] = "https://s3.ap-south-1.amazonaws.com/touchstonebackend/" + user.getUserId() + "/bank/"
+						+ file.getOriginalFilename();
+			} else {
+				links[0] = "";
+			}
 
 			AddBankDetails addBankDetails = new AddBankDetails();
 			addBankDetails.setPersonalRecords("resource:org.touchstone.basic.PersonalRecords#" + user.getPersonalId());
@@ -419,12 +1018,11 @@ public class PersonalAPIResource {
 			rt.postForObject(uri, addBankDetails, AddBankDetails.class);
 
 			bank.setUserId(user.getUserId());
-			String fileName = file.getOriginalFilename();
 			File dir = new File(tmpDir);
 
 			dir.mkdirs();
 			if (dir.isDirectory() && file != null) {
-				File serverFile = new File(dir, fileName);
+				File serverFile = new File(dir, file.getOriginalFilename());
 				serverFile.setReadable(true, false);
 				BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(serverFile));
 				stream.write(file.getBytes());
@@ -463,8 +1061,12 @@ public class PersonalAPIResource {
 
 			String id = RandomUtil.generateActivationKey();
 			String[] links = new String[1];
-			links[0] = "https://s3.ap-south-1.amazonaws.com/touchstonebackend/" + user.getUserId() + "/property/"
-					+ file.getOriginalFilename();
+			if (file != null) {
+				links[0] = "https://s3.ap-south-1.amazonaws.com/touchstonebackend/" + user.getUserId() + "/property/"
+						+ file.getOriginalFilename();
+			} else {
+				links[0] = "";
+			}
 
 			AddPropertyDetails addPropertyDetails = new AddPropertyDetails();
 			addPropertyDetails
@@ -499,12 +1101,11 @@ public class PersonalAPIResource {
 			rt.postForObject(uri, addPropertyDetails, AddPropertyDetails.class);
 
 			property.setUserId(user.getUserId());
-			String fileName = file.getOriginalFilename();
 			File dir = new File(tmpDir);
 
 			dir.mkdirs();
 			if (dir.isDirectory() && file != null) {
-				File serverFile = new File(dir, fileName);
+				File serverFile = new File(dir, file.getOriginalFilename());
 				serverFile.setReadable(true, false);
 				BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(serverFile));
 				stream.write(file.getBytes());
@@ -544,8 +1145,12 @@ public class PersonalAPIResource {
 			String id = RandomUtil.generateActivationKey();
 			String[] links = new String[1];
 
-			links[0] = "https://s3.ap-south-1.amazonaws.com/touchstonebackend/" + user.getUserId() + "/ious/"
-					+ file.getOriginalFilename();
+			if (file != null) {
+				links[0] = "https://s3.ap-south-1.amazonaws.com/touchstonebackend/" + user.getUserId() + "/ious/"
+						+ file.getOriginalFilename();
+			} else {
+				links[0] = "";
+			}
 
 			AddIous addIous = new AddIous();
 			addIous.setPersonalRecords("resource:org.touchstone.basic.PersonalRecords#" + user.getPersonalId());
@@ -580,12 +1185,11 @@ public class PersonalAPIResource {
 			rt.postForObject(uri, addIous, AddIous.class);
 
 			property.setUserId(user.getUserId());
-			String fileName = file.getOriginalFilename();
 			File dir = new File(tmpDir);
 
 			dir.mkdirs();
 			if (dir.isDirectory() && file != null) {
-				File serverFile = new File(dir, fileName);
+				File serverFile = new File(dir, file.getOriginalFilename());
 				serverFile.setReadable(true, false);
 				BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(serverFile));
 				stream.write(file.getBytes());
@@ -624,8 +1228,12 @@ public class PersonalAPIResource {
 			String id = RandomUtil.generateActivationKey();
 			String[] links = new String[1];
 
-			links[0] = "https://s3.ap-south-1.amazonaws.com/touchstonebackend/" + user.getUserId() + "/ious/"
-					+ file.getOriginalFilename();
+			if (file != null) {
+				links[0] = "https://s3.ap-south-1.amazonaws.com/touchstonebackend/" + user.getUserId() + "/awards/"
+						+ file.getOriginalFilename();
+			} else {
+				links[0] = "";
+			}
 
 			AddAwardsRecognitions addAwardsRecognitions = new AddAwardsRecognitions();
 			addAwardsRecognitions
@@ -662,17 +1270,16 @@ public class PersonalAPIResource {
 			rt.postForObject(uri, addAwardsRecognitions, AddAwardsRecognitions.class);
 
 			property.setUserId(user.getUserId());
-			String fileName = file.getOriginalFilename();
 			File dir = new File(tmpDir);
 
 			dir.mkdirs();
 			if (dir.isDirectory() && file != null) {
-				File serverFile = new File(dir, fileName);
+				File serverFile = new File(dir, file.getOriginalFilename());
 				serverFile.setReadable(true, false);
 				BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(serverFile));
 				stream.write(file.getBytes());
 				stream.close();
-				uploadFileToS3(file, user.getUserId(), "ious");
+				uploadFileToS3(file, user.getUserId(), "awards");
 				serverFile.delete();
 			}
 			awardsRepository.save(property);
@@ -706,13 +1313,17 @@ public class PersonalAPIResource {
 			String id = RandomUtil.generateActivationKey();
 			String[] links = new String[1];
 
-			links[0] = "https://s3.ap-south-1.amazonaws.com/touchstonebackend/" + user.getUserId() + "/ious/"
-					+ file.getOriginalFilename();
+			if (file != null) {
+				links[0] = "https://s3.ap-south-1.amazonaws.com/touchstonebackend/" + user.getUserId()
+						+ "/miscellaneous/" + file.getOriginalFilename();
+			} else {
+				links[0] = "";
+			}
 
 			AddMiscellaneousAssetDetails addMiscellaneousAssetDetails = new AddMiscellaneousAssetDetails();
 			addMiscellaneousAssetDetails
 					.setPersonalRecords("resource:org.touchstone.basic.PersonalRecords#" + user.getPersonalId());
-			
+
 			MiscellaneousAssetDetails miscellaneousAssetDetails = new MiscellaneousAssetDetails();
 			miscellaneousAssetDetails.setCost(property.getCost());
 			miscellaneousAssetDetails.setMakeAndModel(property.getMakeAndModel());
@@ -720,8 +1331,7 @@ public class PersonalAPIResource {
 			miscellaneousAssetDetails.setPath(links[0]);
 			miscellaneousAssetDetails.setTemplate(Boolean.valueOf(property.getTemplate()));
 			miscellaneousAssetDetails.setType(property.getType());
-			
-			
+
 			Validation valid = new Validation();
 			valid.set$class("org.touchstone.basic.Validation");
 			valid.setValidationStatus("VALIDATE");
@@ -731,9 +1341,9 @@ public class PersonalAPIResource {
 			valid.setValidationEmail("");
 			valid.setValidationNote("");
 			miscellaneousAssetDetails.setValidation(valid);
-			
+
 			addMiscellaneousAssetDetails.setMiscellaneousAssetDetails(miscellaneousAssetDetails);
-			
+
 			ObjectMapper mappers = new ObjectMapper();
 			String jsonInString = mappers.writeValueAsString(addMiscellaneousAssetDetails);
 			System.out.println(jsonInString);
@@ -743,17 +1353,16 @@ public class PersonalAPIResource {
 			String uri = new String(Constants.Url + "/addMiscellaneousAssetDetails");
 			rt.postForObject(uri, addMiscellaneousAssetDetails, AddMiscellaneousAssetDetails.class);
 			property.setUserId(user.getUserId());
-			String fileName = file.getOriginalFilename();
 			File dir = new File(tmpDir);
 
 			dir.mkdirs();
 			if (dir.isDirectory() && file != null) {
-				File serverFile = new File(dir, fileName);
+				File serverFile = new File(dir, file.getOriginalFilename());
 				serverFile.setReadable(true, false);
 				BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(serverFile));
 				stream.write(file.getBytes());
 				stream.close();
-				uploadFileToS3(file, user.getUserId(), "ious");
+				uploadFileToS3(file, user.getUserId(), "miscellaneous");
 				serverFile.delete();
 			}
 			miscellaneousRepository.save(property);
@@ -788,8 +1397,12 @@ public class PersonalAPIResource {
 			String id = RandomUtil.generateActivationKey();
 			String[] links = new String[1];
 
-			links[0] = "https://s3.ap-south-1.amazonaws.com/touchstonebackend/" + user.getUserId() + "/ious/"
-					+ file.getOriginalFilename();
+			if (file != null) {
+				links[0] = "https://s3.ap-south-1.amazonaws.com/touchstonebackend/" + user.getUserId() + "/insurance/"
+						+ file.getOriginalFilename();
+			} else {
+				links[0] = "";
+			}
 
 			AddInsuranceDetails addInsuranceDetails = new AddInsuranceDetails();
 
@@ -825,17 +1438,16 @@ public class PersonalAPIResource {
 			rt.postForObject(uri, addInsuranceDetails, AddInsuranceDetails.class);
 
 			property.setUserId(user.getUserId());
-			String fileName = file.getOriginalFilename();
 			File dir = new File(tmpDir);
 
 			dir.mkdirs();
 			if (dir.isDirectory() && file != null) {
-				File serverFile = new File(dir, fileName);
+				File serverFile = new File(dir, file.getOriginalFilename());
 				serverFile.setReadable(true, false);
 				BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(serverFile));
 				stream.write(file.getBytes());
 				stream.close();
-				uploadFileToS3(file, user.getUserId(), "ious");
+				uploadFileToS3(file, user.getUserId(), "insurance");
 				serverFile.delete();
 			}
 			insuranceRepository.save(property);
@@ -877,5 +1489,29 @@ public class PersonalAPIResource {
 		s3.putObject(new PutObjectRequest(bucketName, id + "/" + type + "/" + fileName, new File(tmpDir + fileName))
 				.withCannedAcl(CannedAccessControlList.PublicRead));
 
+	}
+
+	@Async
+	public void sendEmail(String to, String subject, String content, boolean isMultipart, boolean isHtml) {
+		log.debug("Send email[multipart '{}' and html '{}'] to '{}' with subject '{}' and content={}", isMultipart,
+				isHtml, to, subject, content);
+
+		// Prepare message using a Spring helper
+		MimeMessage mimeMessage = javaMailSender.createMimeMessage();
+		try {
+			MimeMessageHelper message = new MimeMessageHelper(mimeMessage, isMultipart, StandardCharsets.UTF_8.name());
+			message.setTo(to);
+			message.setFrom(jHipsterProperties.getMail().getFrom());
+			message.setSubject(subject);
+			message.setText(content, isHtml);
+			javaMailSender.send(mimeMessage);
+			log.debug("Sent email to User '{}'", to);
+		} catch (Exception e) {
+			if (log.isDebugEnabled()) {
+				log.warn("Email could not be sent to user '{}'", to, e);
+			} else {
+				log.warn("Email could not be sent to user '{}': {}", to, e.getMessage());
+			}
+		}
 	}
 }

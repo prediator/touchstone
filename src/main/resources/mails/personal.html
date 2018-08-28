@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<title>Ridgelift creation</title>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="shortcut icon" />
+</head>
+<body>
+	<p th:text="${by}"></p>
+	<p th:text="${desc}"></p>
+	<p>Click on this link to validate.</p>
+	<p th:text="${document}"></p>
+	<a th:href="@{|${url}|}"> Click Here to Validate</a>
+
+	<p>
+		<span>Cheers, </span> <br /> <em>Your friend.</em>
+	</p>
+</body>
+</html>

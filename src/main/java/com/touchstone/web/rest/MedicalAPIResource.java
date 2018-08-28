@@ -1,23 +1,35 @@
 package com.touchstone.web.rest;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
+import javax.mail.internet.MimeMessage;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.StringHttpMessageConverter;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,6 +38,8 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
+import org.thymeleaf.context.Context;
+import org.thymeleaf.spring4.SpringTemplateEngine;
 
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.auth.AWSCredentials;
@@ -59,6 +73,8 @@ import com.touchstone.service.dto.Validation;
 import com.touchstone.service.util.RandomUtil;
 import com.touchstone.web.rest.util.GenerateOTP;
 
+import io.github.jhipster.config.JHipsterProperties;
+
 /**
  * REST controller for adding certificate, Education, Experience, Project,
  * Skills.
@@ -73,10 +89,20 @@ public class MedicalAPIResource {
 	private final String tmpDir = "/tmp/";
 	private GenerateOTP generateOtp = new GenerateOTP();
 	private final MailService mailService;
+	private final SpringTemplateEngine templateEngine;
+	private final MessageSource messageSource;
+	private final JHipsterProperties jHipsterProperties;
 
-	public MedicalAPIResource(UserService userService, MailService mailService) {
+	private final JavaMailSender javaMailSender;
+
+	public MedicalAPIResource(UserService userService, MailService mailService, SpringTemplateEngine templateEngine,
+			MessageSource messageSource, JHipsterProperties jHipsterProperties, JavaMailSender javaMailSender) {
 		this.userService = userService;
 		this.mailService = mailService;
+		this.templateEngine = templateEngine;
+		this.messageSource = messageSource;
+		this.jHipsterProperties = jHipsterProperties;
+		this.javaMailSender = javaMailSender;
 	}
 
 	@GetMapping("/selectHealthByHealthId")
@@ -95,6 +121,115 @@ public class MedicalAPIResource {
 
 	}
 
+	@GetMapping("/healthvalidate/{otp}/{slno}/{uname}/{email}/{type}")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public ResponseEntity<Map<String, String>> healthvalidate(@PathVariable Integer otp, @PathVariable String slno,
+			@PathVariable String uname, @PathVariable String email, @PathVariable String type) {
+		User user = userService.getUserWithAuthoritiesByLogin(uname).get();
+
+		try {
+			if (generateOtp.checkOTP(email, otp) == 1) {
+				if (StringUtils.equals(type, "healthInfo")) {
+					AddHealthCare addHealthCare = new AddHealthCare();
+					addHealthCare.set$class("org.touchstone.basic.validateHealthCare");
+					addHealthCare.setHealth("resource:org.touchstone.basic.Health#" + user.getHealthId());
+
+					HealthCare health = new HealthCare();
+					health.setHealthCareId(slno);
+					health.setReportReference(new ArrayList<>());
+					Validation valid = new Validation();
+					valid.set$class("org.touchstone.basic.Validation");
+					valid.setValidationStatus("VALIDATED");
+					valid.setValidationType("MANUAL");
+					valid.setValidationBy("");
+					valid.setValidationDate("");
+					valid.setValidationEmail("");
+					valid.setValidationNote("");
+					health.setValidation(valid);
+
+					addHealthCare.setHealthCare(health);
+
+					ObjectMapper mappers = new ObjectMapper();
+					String jsonInString = mappers.writeValueAsString(addHealthCare);
+					System.out.println(jsonInString);
+
+					RestTemplate rt = new RestTemplate();
+					rt.getMessageConverters().add(new StringHttpMessageConverter());
+					String uri = new String(Constants.Url + "/validateHealthCare");
+					rt.postForObject(uri, addHealthCare, AddHealthCare.class);
+				} else if (StringUtils.equals(type, "healthReport")) {
+					HealthCareReport_ health = new HealthCareReport_();
+
+					health.setReportReference(new ArrayList<>());
+					health.setHealthCareReportId(slno);
+					HealthCareReport healthCareReport = new HealthCareReport();
+					healthCareReport.set$class("org.touchstone.basic.validateHealthCareReport");
+					healthCareReport.setHealth("resource:org.touchstone.basic.Health#" + user.getHealthId());
+					healthCareReport.setHealthCareReport(health);
+					Validation valid = new Validation();
+					valid.set$class("org.touchstone.basic.Validation");
+					valid.setValidationStatus("VALIDATED");
+					valid.setValidationType("MANUAL");
+					valid.setValidationBy("");
+					valid.setValidationDate("");
+					valid.setValidationEmail("");
+					valid.setValidationNote("");
+					health.setValidation(valid);
+
+					ObjectMapper mappers = new ObjectMapper();
+					String jsonInString = mappers.writeValueAsString(healthCareReport);
+					System.out.println(jsonInString);
+					RestTemplate rt = new RestTemplate();
+					rt.getMessageConverters().add(new StringHttpMessageConverter());
+					String uri = new String(Constants.Url + "/validateHealthCareReport");
+					rt.postForObject(uri, healthCareReport, HealthCareReport.class);
+				} else if (StringUtils.equals(type, "insuranceClaim")) {
+					InsuranceClaim_ ic = new InsuranceClaim_();
+
+					InsuranceClaim insuranceClaim = new InsuranceClaim();
+					insuranceClaim.set$class("org.touchstone.basic.validateInsuranceDetails");
+					insuranceClaim.setHealth("resource:org.touchstone.basic.Health#" + user.getHealthId());
+					ic.setInsuranceClaimId(slno);
+					ic.setClaimreports(new ArrayList<>());
+					ic.setAilment(new ArrayList());
+					Validation valid = new Validation();
+					valid.set$class("org.touchstone.basic.Validation");
+					valid.setValidationStatus("VALIDATED");
+					valid.setValidationType("MANUAL");
+					valid.setValidationBy("");
+					valid.setValidationDate("");
+					valid.setValidationEmail("");
+					valid.setValidationNote("");
+
+					ic.setValidation(valid);
+
+					insuranceClaim.setInsuranceClaim(ic);
+					ObjectMapper mappers = new ObjectMapper();
+					String jsonInString = mappers.writeValueAsString(insuranceClaim);
+					System.out.println(jsonInString);
+
+					RestTemplate rt = new RestTemplate();
+					rt.getMessageConverters().add(new StringHttpMessageConverter());
+					String uri = new String(Constants.Url + "/validateInsuranceClaim");
+					rt.postForObject(uri, insuranceClaim, InsuranceClaim.class);
+				}
+
+				generateOtp.removeOtp(email);
+
+				Map<String, String> data = new HashMap<>();
+				data.put("status", "success");
+				return new ResponseEntity<Map<String, String>>(data, HttpStatus.ACCEPTED);
+			} else {
+				return new ResponseEntity<Map<String, String>>(HttpStatus.UNAUTHORIZED);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			return new ResponseEntity<Map<String, String>>(HttpStatus.UNAUTHORIZED);
+		}
+
+	}
+
 	@PostMapping("/healthrecordsvalidate")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
@@ -104,11 +239,11 @@ public class MedicalAPIResource {
 		try {
 			if (StringUtils.equals(medicalValidation.getType(), "healthInfo")) {
 				AddHealthCare addHealthCare = new AddHealthCare();
-				addHealthCare.set$class("org.touchstone.basic.addHealthCare");
+				addHealthCare.set$class("org.touchstone.basic.validateHealthCare");
 				addHealthCare.setHealth("resource:org.touchstone.basic.Health#" + user.getHealthId());
 
 				HealthCare health = new HealthCare();
-				health.setHealthCareId("74045282067339526837");
+				health.setHealthCareId(medicalValidation.getSlno());
 				health.setReportReference(new ArrayList<>());
 				Validation valid = new Validation();
 				valid.set$class("org.touchstone.basic.Validation");
@@ -130,10 +265,101 @@ public class MedicalAPIResource {
 				rt.getMessageConverters().add(new StringHttpMessageConverter());
 				String uri = new String(Constants.Url + "/validateHealthCare");
 				rt.postForObject(uri, addHealthCare, AddHealthCare.class);
+			} else if (StringUtils.equals(medicalValidation.getType(), "healthReport")) {
+				HealthCareReport_ health = new HealthCareReport_();
+				health.setReportReference(new ArrayList<>());
+				health.setHealthCareReportId(medicalValidation.getSlno());
+				HealthCareReport healthCareReport = new HealthCareReport();
+				healthCareReport.set$class("org.touchstone.basic.validateHealthCareReport");
+				healthCareReport.setHealth("resource:org.touchstone.basic.Health#" + user.getHealthId());
+				healthCareReport.setHealthCareReport(health);
+				Validation valid = new Validation();
+				valid.set$class("org.touchstone.basic.Validation");
+				valid.setValidationStatus("IN_PROGRESS");
+				valid.setValidationType("MANUAL");
+				valid.setValidationBy("");
+				valid.setValidationDate("");
+				valid.setValidationEmail("");
+				valid.setValidationNote("");
+				health.setValidation(valid);
+
+				ObjectMapper mappers = new ObjectMapper();
+				String jsonInString = mappers.writeValueAsString(healthCareReport);
+				System.out.println(jsonInString);
+				RestTemplate rt = new RestTemplate();
+				rt.getMessageConverters().add(new StringHttpMessageConverter());
+				String uri = new String(Constants.Url + "/validateHealthCareReport");
+				rt.postForObject(uri, healthCareReport, HealthCareReport.class);
+			} else if (StringUtils.equals(medicalValidation.getType(), "insuranceClaim")) {
+				InsuranceClaim_ ic = new InsuranceClaim_();
+
+				InsuranceClaim insuranceClaim = new InsuranceClaim();
+				insuranceClaim.set$class("org.touchstone.basic.validateInsuranceClaim");
+				insuranceClaim.setHealth("resource:org.touchstone.basic.Health#" + user.getHealthId());
+				ic.setInsuranceClaimId(medicalValidation.getSlno());
+				ic.setClaimreports(new ArrayList<>());
+				ic.setAilment(new ArrayList());
+				Validation valid = new Validation();
+				valid.set$class("org.touchstone.basic.Validation");
+				valid.setValidationStatus("IN_PROGRESS");
+				valid.setValidationType("MANUAL");
+				valid.setValidationBy("");
+				valid.setValidationDate("");
+				valid.setValidationEmail("");
+				valid.setValidationNote("");
+
+				ic.setValidation(valid);
+
+				insuranceClaim.setInsuranceClaim(ic);
+				ObjectMapper mappers = new ObjectMapper();
+				String jsonInString = mappers.writeValueAsString(insuranceClaim);
+				System.out.println(jsonInString);
+
+				RestTemplate rt = new RestTemplate();
+				rt.getMessageConverters().add(new StringHttpMessageConverter());
+				String uri = new String(Constants.Url + "/validateInsuranceClaim");
+				rt.postForObject(uri, insuranceClaim, InsuranceClaim.class);
 			}
+
+			// {otp}/{slno}/{uname}/{email}/{type}
+
+			Locale locale = Locale.forLanguageTag("en");
+			Context context = new Context(locale);
+			context.setVariable("by", "Hi " + medicalValidation.getValidationBy());
+			context.setVariable("desc", medicalValidation.getDescription());
+			System.out.println("---------" + medicalValidation);
+			context.setVariable("document", medicalValidation.getUrl());
+			context.setVariable("url",
+					" http://ridgelift.io:8080/api/healthvalidate/" + generateOtp.storeOTP(medicalValidation.getEmail())
+							+ "/" + medicalValidation.getSlno() + "/" + user.getLogin() + "/"
+							+ medicalValidation.getEmail() + "/" + medicalValidation.getType());
+			String content = templateEngine.process("medical", context);
+			String subject = messageSource.getMessage("email.activation.title", null, locale);
+			sendEmail(user.getEmail(), subject, content, false, true);
+
+//			String message = "Dear " + medicalValidation.getValidationBy() + " " + medicalValidation.getDescription()
+//					+ " http://ridgelift.io:8080/api/healthvalidate/"
+//					+ generateOtp.storeOTP(medicalValidation.getEmail()) + "/" + medicalValidation.getSlno() + "/"
+//					+ user.getLogin() + "/" + medicalValidation.getEmail() + "/" + medicalValidation.getType();
+//			mailService.sendEmail(medicalValidation.getEmail(), "validation", message, false, true);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+
+	}
+
+	@GetMapping("/tet")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public void tet() {
+		Locale locale = Locale.forLanguageTag("en");
+		Context context = new Context(locale);
+		context.setVariable("by", "Hi " + "asdfasdfasdf");
+		context.setVariable("desc", "asdfasdfasdf");
+		context.setVariable("url", " http://ridgelift.io:8080/api/healthvalidate/");
+		String content = templateEngine.process("medical", context);
+		String subject = messageSource.getMessage("email.activation.title", null, locale);
+		sendEmail("my3d3d@gmail.com", subject, content, false, true);
 
 	}
 
@@ -148,6 +374,14 @@ public class MedicalAPIResource {
 		ObjectMapper jsonParserClient = new ObjectMapper();
 		String id = RandomUtil.generateActivationKey();
 
+		String[] links = new String[1];
+		if (files != null) {
+			links[0] = "https://s3.ap-south-1.amazonaws.com/touchstonebackend/" + user.getUserId() + "/healthcare/"
+					+ files.getOriginalFilename();
+		} else {
+			links[0] = "";
+		}
+
 		AddHealthCare addHealthCare = new AddHealthCare();
 		addHealthCare.set$class("org.touchstone.basic.addHealthCare");
 		addHealthCare.setHealth("resource:org.touchstone.basic.Health#" + user.getHealthId());
@@ -156,7 +390,7 @@ public class MedicalAPIResource {
 		health.setHealthCareId(id);
 
 		List<String> ref = new ArrayList<>();
-		ref.add(reference);
+		ref.add(links[0]);
 		health.setReportReference(ref);
 		addHealthCare.setHealthCare(health);
 
@@ -179,6 +413,19 @@ public class MedicalAPIResource {
 		String uri = new String(Constants.Url + "/addHealthCare");
 		rt.postForObject(uri, addHealthCare, AddHealthCare.class);
 
+		File dir = new File(tmpDir);
+
+		dir.mkdirs();
+		if (dir.isDirectory() && files != null) {
+			File serverFile = new File(dir, files.getOriginalFilename());
+			serverFile.setReadable(true, false);
+			BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(serverFile));
+			stream.write(files.getBytes());
+			stream.close();
+			uploadFileToS3(files, user.getUserId(), "healthcare");
+			serverFile.delete();
+		}
+
 	}
 
 	@PostMapping("/addHealthCareReport")
@@ -191,14 +438,23 @@ public class MedicalAPIResource {
 
 			ObjectMapper jsonParserClient = new ObjectMapper();
 			String id = RandomUtil.generateActivationKey();
+			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
+
+			String[] links = new String[1];
+			if (files != null) {
+				links[0] = "https://s3.ap-south-1.amazonaws.com/touchstonebackend/" + user.getUserId()
+						+ "/healthcarereport/" + files.getOriginalFilename();
+			} else {
+				links[0] = "";
+			}
 
 			HealthCareReport_ health = jsonParserClient.readValue(healthReport, HealthCareReport_.class);
 			List<String> ref = new ArrayList<>();
-			ref.add(reference);
+			ref.add(links[0]);
 			health.setReportReference(ref);
 			health.setHealthCareReportId(id);
 			HealthCareReport healthCareReport = new HealthCareReport();
-			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
+
 			healthCareReport.setHealth("resource:org.touchstone.basic.Health#" + user.getHealthId());
 			healthCareReport.setHealthCareReport(health);
 			Validation valid = new Validation();
@@ -219,6 +475,19 @@ public class MedicalAPIResource {
 			String uri = new String(Constants.Url + "/addhealthCareReport");
 			rt.postForObject(uri, healthCareReport, HealthCareReport.class);
 
+			File dir = new File(tmpDir);
+
+			dir.mkdirs();
+			if (dir.isDirectory() && files != null) {
+				File serverFile = new File(dir, files.getOriginalFilename());
+				serverFile.setReadable(true, false);
+				BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(serverFile));
+				stream.write(files.getBytes());
+				stream.close();
+				uploadFileToS3(files, user.getUserId(), "healthcarereport");
+				serverFile.delete();
+			}
+
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -235,14 +504,23 @@ public class MedicalAPIResource {
 
 			ObjectMapper jsonParserClient = new ObjectMapper();
 			InsuranceClaim_ ic = jsonParserClient.readValue(healthInsurance, InsuranceClaim_.class);
+			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
+
+			String[] links = new String[1];
+			if (files != null) {
+				links[0] = "https://s3.ap-south-1.amazonaws.com/touchstonebackend/" + user.getUserId() + "/insurance/"
+						+ files.getOriginalFilename();
+			} else {
+				links[0] = "";
+			}
 
 			InsuranceClaim insuranceClaim = new InsuranceClaim();
-			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
+
 			insuranceClaim.setHealth("resource:org.touchstone.basic.Health#" + user.getHealthId());
 			ic.setInsuranceClaimId(id);
 
 			List<String> ref = new ArrayList<>();
-			ref.add(reference);
+			ref.add(links[0]);
 			ic.setClaimreports(ref);
 
 			ic.setAilment(new ArrayList());
@@ -266,6 +544,19 @@ public class MedicalAPIResource {
 			rt.getMessageConverters().add(new StringHttpMessageConverter());
 			String uri = new String(Constants.Url + "/addInsuranceClaim");
 			rt.postForObject(uri, insuranceClaim, InsuranceClaim.class);
+
+			File dir = new File(tmpDir);
+
+			dir.mkdirs();
+			if (dir.isDirectory() && files != null) {
+				File serverFile = new File(dir, files.getOriginalFilename());
+				serverFile.setReadable(true, false);
+				BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(serverFile));
+				stream.write(files.getBytes());
+				stream.close();
+				uploadFileToS3(files, user.getUserId(), "insurance");
+				serverFile.delete();
+			}
 
 			return new ResponseEntity(insuranceClaim, HttpStatus.CREATED);
 		} catch (Exception e) {
@@ -302,7 +593,8 @@ public class MedicalAPIResource {
 					IOUtils.toByteArray(input));
 			uploadFileToS3(multipartFile, user.getUserId(), "medical");
 
-			ailment_.setAilmentReference("medical/" + file.getName());
+			ailment_.setAilmentReference("https://s3.ap-south-1.amazonaws.com/touchstonebackend/" + user.getUserId()
+					+ "/medical/" + file.getName());
 			ailment_.set$class("org.touchstone.basic.Ailment");
 			ailment_.setAilmentId(name);
 
@@ -340,5 +632,29 @@ public class MedicalAPIResource {
 		s3.putObject(new PutObjectRequest(bucketName, id + "/" + type + "/" + fileName, new File(tmpDir + fileName))
 				.withCannedAcl(CannedAccessControlList.PublicRead));
 
+	}
+
+	@Async
+	public void sendEmail(String to, String subject, String content, boolean isMultipart, boolean isHtml) {
+		log.debug("Send email[multipart '{}' and html '{}'] to '{}' with subject '{}' and content={}", isMultipart,
+				isHtml, to, subject, content);
+
+		// Prepare message using a Spring helper
+		MimeMessage mimeMessage = javaMailSender.createMimeMessage();
+		try {
+			MimeMessageHelper message = new MimeMessageHelper(mimeMessage, isMultipart, StandardCharsets.UTF_8.name());
+			message.setTo(to);
+			message.setFrom(jHipsterProperties.getMail().getFrom());
+			message.setSubject(subject);
+			message.setText(content, isHtml);
+			javaMailSender.send(mimeMessage);
+			log.debug("Sent email to User '{}'", to);
+		} catch (Exception e) {
+			if (log.isDebugEnabled()) {
+				log.warn("Email could not be sent to user '{}'", to, e);
+			} else {
+				log.warn("Email could not be sent to user '{}': {}", to, e.getMessage());
+			}
+		}
 	}
 }

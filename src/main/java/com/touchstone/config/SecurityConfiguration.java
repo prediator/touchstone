@@ -101,13 +101,14 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
             .antMatchers("/api/addhealthCareReport").permitAll()
             .antMatchers("/api/addhealthCare").permitAll()
             .antMatchers("/api/selectHealthByHealthId/**").permitAll()
-
-            
             .antMatchers("/api/getProfile/**").permitAll()
             .antMatchers("/api/validateCertification/**").permitAll()
             .antMatchers("/api/poc/**").permitAll()
             .antMatchers("/api/poc").permitAll()
+            .antMatchers("/api/tet").permitAll()
             .antMatchers("/api/getPersonalRecords**").permitAll()
+            .antMatchers("/api/healthvalidate/**/**/**/**/**").permitAll()
+            .antMatchers("/api/getDashboard").permitAll()
             
             .antMatchers("/api/validateCertification").permitAll()
             .antMatchers("/api/Consumer").permitAll()

@@ -17,6 +17,15 @@ public class PersonalRecords {
 	private List<InsuranceDetails_> insuranceDetails = null;
 	private List<MiscellaneousAssetDetails> miscellaneousAssetDetails = null;
 
+	@Override
+	public String toString() {
+		return "PersonalRecords [$class=" + $class + ", personalId=" + personalId + ", user=" + user + ", documents="
+				+ documents + ", taxDetails=" + taxDetails + ", creditReport=" + creditReport + ", bankDetails="
+				+ bankDetails + ", propertyDetails=" + propertyDetails + ", ious=" + ious + ", awardsRecognitions="
+				+ awardsRecognitions + ", insuranceDetails=" + insuranceDetails + ", miscellaneousAssetDetails="
+				+ miscellaneousAssetDetails + "]";
+	}
+
 	public String get$class() {
 		return $class;
 	}

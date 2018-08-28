@@ -2,7 +2,7 @@ package com.touchstone.service.dto;
 
 public class AddTaxDetails {
 
-	private String $class = "org.touchstone.basic.addTaxDetails";;
+	private String $class = "org.touchstone.basic.addTaxDetails";
 	private TaxDetails taxDetails ;
 	private String personalRecords;
 

@@ -6,8 +6,8 @@ public class HealthCareReport_ {
 
 	private String $class = "org.touchstone.basic.HealthCareReport";
 	private String healthCareReportId;
-	private String name;
-	private String date;
+	private String name = "";
+	private String date = "";
 	private List<String> reportReference = null;
 	private Validation validation;
 

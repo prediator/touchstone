@@ -4,17 +4,25 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+
+import javax.mail.internet.MimeMessage;
 
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.StringHttpMessageConverter;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,6 +33,8 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
+import org.thymeleaf.context.Context;
+import org.thymeleaf.spring4.SpringTemplateEngine;
 
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.auth.AWSCredentials;
@@ -61,6 +71,7 @@ import com.touchstone.service.util.RandomUtil;
 import com.touchstone.web.rest.errors.EmailAlreadyUsedException;
 import com.touchstone.web.rest.util.GenerateOTP;
 
+import io.github.jhipster.config.JHipsterProperties;
 import ma.glasnost.orika.MapperFacade;
 import ma.glasnost.orika.MapperFactory;
 import ma.glasnost.orika.impl.DefaultMapperFactory;
@@ -85,15 +96,25 @@ public class ConsumerResource {
 	private final InquiryRepository inquiryRepository;
 
 	private GenerateOTP generateOtp = new GenerateOTP();
+	private final SpringTemplateEngine templateEngine;
+	private final MessageSource messageSource;
+	private final JHipsterProperties jHipsterProperties;
+
+	private final JavaMailSender javaMailSender;
 
 	public ConsumerResource(UserService userService, MailService mailService, UserRepository userRepository,
-			DocsRepository docsRepository, InquiryRepository inquiryRepository) {
+			DocsRepository docsRepository, InquiryRepository inquiryRepository, SpringTemplateEngine templateEngine,
+			MessageSource messageSource, JHipsterProperties jHipsterProperties, JavaMailSender javaMailSender) {
 		super();
 		this.userService = userService;
 		this.mailService = mailService;
 		this.userRepository = userRepository;
 		this.docsRepository = docsRepository;
 		this.inquiryRepository = inquiryRepository;
+		this.templateEngine = templateEngine;
+		this.messageSource = messageSource;
+		this.jHipsterProperties = jHipsterProperties;
+		this.javaMailSender = javaMailSender;
 	}
 
 	/**
@@ -163,11 +184,11 @@ public class ConsumerResource {
 		rt.getMessageConverters().add(new StringHttpMessageConverter());
 		uri = new String(Constants.Url + "/Health");
 		rt.postForObject(uri, health, Health.class);
-		
+
 		Personal personal = new Personal();
 		personal.setUser("resource:org.touchstone.basic.Consumer#" + personalId);
 		personal.setPersonalId(personalId);
-		
+
 		rt = new RestTemplate();
 		rt.getMessageConverters().add(new StringHttpMessageConverter());
 		uri = new String(Constants.Url + "/PersonalRecords");
@@ -175,12 +196,19 @@ public class ConsumerResource {
 		ObjectMapper mappers = new ObjectMapper();
 		String jsonInString = mappers.writeValueAsString(personal);
 		System.out.println(jsonInString);
-		
 
-		mailService.sendEmail(
-				data.getEmail(), "Account Created", "http://ridgelift.io:8080/api/verifyc/"
-						+ generateOtp.storeOTP(data.getUserId()) + "/" + data.getEmail() + "/" + data.getUserId(),
-				false, true);
+		Locale locale = Locale.forLanguageTag("en");
+		Context context = new Context(locale);
+		context.setVariable("url", "http://ridgelift.io:8080/api/verifyc/" + generateOtp.storeOTP(data.getUserId())
+				+ "/" + data.getEmail() + "/" + data.getUserId());
+		String content = templateEngine.process("consumer", context);
+		String subject = messageSource.getMessage("email.activation.title", null, locale);
+		sendEmail(data.getEmail(), subject, content, false, true);
+
+//		mailService.sendEmail(
+//				data.getEmail(), "Account Created", "http://ridgelift.io:8080/api/verifyc/"
+//						+ generateOtp.storeOTP(data.getUserId()) + "/" + data.getEmail() + "/" + data.getUserId(),
+//				false, true);
 		return new ResponseEntity(HttpStatus.CREATED);
 
 	}
@@ -655,6 +683,30 @@ public class ConsumerResource {
 		s3.putObject(new PutObjectRequest(bucketName, id + "/" + fileName, new File("/tmp/" + fileName))
 				.withCannedAcl(CannedAccessControlList.PublicRead));
 
+	}
+
+	@Async
+	public void sendEmail(String to, String subject, String content, boolean isMultipart, boolean isHtml) {
+		log.debug("Send email[multipart '{}' and html '{}'] to '{}' with subject '{}' and content={}", isMultipart,
+				isHtml, to, subject, content);
+
+		// Prepare message using a Spring helper
+		MimeMessage mimeMessage = javaMailSender.createMimeMessage();
+		try {
+			MimeMessageHelper message = new MimeMessageHelper(mimeMessage, isMultipart, StandardCharsets.UTF_8.name());
+			message.setTo(to);
+			message.setFrom(jHipsterProperties.getMail().getFrom());
+			message.setSubject(subject);
+			message.setText(content, isHtml);
+			javaMailSender.send(mimeMessage);
+			log.debug("Sent email to User '{}'", to);
+		} catch (Exception e) {
+			if (log.isDebugEnabled()) {
+				log.warn("Email could not be sent to user '{}'", to, e);
+			} else {
+				log.warn("Email could not be sent to user '{}': {}", to, e.getMessage());
+			}
+		}
 	}
 
 }

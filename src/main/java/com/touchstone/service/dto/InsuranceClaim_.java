@@ -6,10 +6,10 @@ public class InsuranceClaim_ {
 
 	private String $class = "org.touchstone.basic.InsuranceClaim";
 	private String insuranceClaimId = "";
-	private Boolean currentlyCovered;
+	private Boolean currentlyCovered = false;
 	private String companyName = "";
-	private Boolean hospitalisedInLast;
-	private Boolean previouslyCovered;
+	private Boolean hospitalisedInLast = false;
+	private Boolean previouslyCovered = false;
 	private String previouslyCoveredInsuranceName = "";
 	private String diagnosis = "";
 	private String dateOfInsurance = "";
