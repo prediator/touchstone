@@ -6,6 +6,15 @@ public class AddIous {
 	private String $class = "org.touchstone.basic.addIous";
 	private Ious ious;
 	private String personalRecords;
+	private Validation validation;
+
+	public Validation getValidation() {
+		return validation;
+	}
+
+	public void setValidation(Validation validation) {
+		this.validation = validation;
+	}
 
 	public String get$class() {
 		return $class;

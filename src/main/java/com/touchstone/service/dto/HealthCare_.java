@@ -10,7 +10,8 @@ public class HealthCare_ {
 	private String height = "";
 	private String weight = "";
 	private String sugar = "";
-	private String bloodPressure = "";
+	private String healthReportTypeName = "";
+	String bloodPressure = "";
 	private String dateOfReport = "";
 	private Boolean needCheckUpReminder = false;
 
@@ -20,6 +21,14 @@ public class HealthCare_ {
 				+ ", height=" + height + ", weight=" + weight + ", sugar=" + sugar + ", bloodPressure=" + bloodPressure
 				+ ", dateOfReport=" + dateOfReport + ", needCheckUpReminder=" + needCheckUpReminder
 				+ ", reportReference=" + reportReference + ", validation=" + validation + "]";
+	}
+
+	public String getHealthReportTypeName() {
+		return healthReportTypeName;
+	}
+
+	public void setHealthReportTypeName(String healthReportTypeName) {
+		this.healthReportTypeName = healthReportTypeName;
 	}
 
 	private List<String> reportReference = null;

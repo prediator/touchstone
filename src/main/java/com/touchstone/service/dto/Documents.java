@@ -7,6 +7,15 @@ public class Documents {
 	private String aadhar = "";
 	private String license = "";
 	private String income = "";
+	private Validation validation;
+
+	public Validation getValidation() {
+		return validation;
+	}
+
+	public void setValidation(Validation validation) {
+		this.validation = validation;
+	}
 
 	public String getAadhar() {
 		return aadhar;
