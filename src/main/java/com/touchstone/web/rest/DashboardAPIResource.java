@@ -1,8 +1,10 @@
 package com.touchstone.web.rest;
 
-import java.io.File;
 import java.io.IOException;
 import java.security.Principal;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
@@ -17,7 +19,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.multipart.MultipartFile;
 import org.thymeleaf.spring4.SpringTemplateEngine;
 
 import com.amazonaws.AmazonClientException;
@@ -26,9 +27,7 @@ import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.ObjectListing;
-import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -47,6 +46,7 @@ import com.touchstone.service.MailService;
 import com.touchstone.service.PersonalService;
 import com.touchstone.service.UserService;
 import com.touchstone.service.dto.AddIous;
+import com.touchstone.service.dto.Alert;
 import com.touchstone.service.dto.AwardsRecognitions;
 import com.touchstone.service.dto.BankDetails;
 import com.touchstone.service.dto.Certification;
@@ -286,6 +286,57 @@ public class DashboardAPIResource {
 		dashboardStats.setTotalDocuments(getList(user.getUserId()));
 
 		return new ResponseEntity<DashboardStats>(dashboardStats, HttpStatus.ACCEPTED);
+	}
+
+	@GetMapping("/getAlerts")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public ResponseEntity<List<Alert>> getAlerts(Principal login) throws IOException {
+		User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
+		RestTemplate rt = new RestTemplate();
+		String uri = new String(Constants.Url + "/queries/selectHealthByHealthId?healthId=" + user.getHealthId());
+
+		List<Health> data = rt.getForObject(uri, List.class);
+
+		ObjectMapper mapper = new ObjectMapper();
+		String jsonInString = mapper.writeValueAsString(data.get(0));
+		Health health = mapper.readValue(jsonInString, Health.class);
+
+		List<Alert> alert = new ArrayList<>();
+		for (HealthCare_ h : health.getHealthCare()) {
+			Alert a = new Alert();
+			if (h.getNeedCheckUpReminder() == true) {
+				a.setDate(h.getDateOfReport());
+				a.setHealthReportTypeName(h.getHealthReportTypeName());
+				alert.add(a);
+			}
+		}
+
+		return new ResponseEntity<List<Alert>>(alert, HttpStatus.ACCEPTED);
+
+	}
+
+	public static String compareDates(String d1, String d2) {
+		try {
+			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+			Date date1 = sdf.parse(d1);
+			Date date2 = sdf.parse(d2);
+
+			if (date1.after(date2)) {
+				return "after";
+			}
+			if (date1.before(date2)) {
+				return "before";
+			}
+
+			if (date1.equals(date2)) {
+				return "equal";
+			}
+
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		return null;
 	}
 
 	public int getList(String id) {

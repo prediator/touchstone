@@ -179,7 +179,7 @@ public class PersonalAPIResource {
 
 				Validation valid = new Validation();
 				valid.set$class("org.touchstone.basic.Validation");
-				valid.setValidationStatus("IN_PROGRESS");
+				valid.setValidationStatus("VALIDATED");
 				valid.setValidationType("MANUAL");
 				valid.setValidationBy("");
 				valid.setValidationDate("");
@@ -211,7 +211,7 @@ public class PersonalAPIResource {
 
 				Validation valid = new Validation();
 				valid.set$class("org.touchstone.basic.Validation");
-				valid.setValidationStatus("IN_PROGRESS");
+				valid.setValidationStatus("VALIDATED");
 				valid.setValidationType("MANUAL");
 				valid.setValidationBy("");
 				valid.setValidationDate("");
@@ -245,7 +245,7 @@ public class PersonalAPIResource {
 
 				Validation valid = new Validation();
 				valid.set$class("org.touchstone.basic.Validation");
-				valid.setValidationStatus("IN_PROGRESS");
+				valid.setValidationStatus("VALIDATED");
 				valid.setValidationType("MANUAL");
 				valid.setValidationBy("");
 				valid.setValidationDate("");
@@ -276,7 +276,7 @@ public class PersonalAPIResource {
 
 				Validation valid = new Validation();
 				valid.set$class("org.touchstone.basic.Validation");
-				valid.setValidationStatus("IN_PROGRESS");
+				valid.setValidationStatus("VALIDATED");
 				valid.setValidationType("MANUAL");
 				valid.setValidationBy("");
 				valid.setValidationDate("");
@@ -307,7 +307,7 @@ public class PersonalAPIResource {
 
 				Validation valid = new Validation();
 				valid.set$class("org.touchstone.basic.Validation");
-				valid.setValidationStatus("IN_PROGRESS");
+				valid.setValidationStatus("VALIDATED");
 				valid.setValidationType("MANUAL");
 				valid.setValidationBy("");
 				valid.setValidationDate("");
@@ -341,7 +341,7 @@ public class PersonalAPIResource {
 
 				Validation valid = new Validation();
 				valid.set$class("org.touchstone.basic.Validation");
-				valid.setValidationStatus("IN_PROGRESS");
+				valid.setValidationStatus("VALIDATED");
 				valid.setValidationType("MANUAL");
 				valid.setValidationBy("");
 				valid.setValidationDate("");
@@ -375,7 +375,7 @@ public class PersonalAPIResource {
 
 				Validation valid = new Validation();
 				valid.set$class("org.touchstone.basic.Validation");
-				valid.setValidationStatus("IN_PROGRESS");
+				valid.setValidationStatus("VALIDATED");
 				valid.setValidationType("MANUAL");
 				valid.setValidationBy("");
 				valid.setValidationDate("");
@@ -408,7 +408,7 @@ public class PersonalAPIResource {
 
 				Validation valid = new Validation();
 				valid.set$class("org.touchstone.basic.Validation");
-				valid.setValidationStatus("IN_PROGRESS");
+				valid.setValidationStatus("VALIDATED");
 				valid.setValidationType("MANUAL");
 				valid.setValidationBy("");
 				valid.setValidationDate("");
@@ -711,7 +711,7 @@ public class PersonalAPIResource {
 		System.out.println("---------" + medicalValidation);
 		context.setVariable("document", medicalValidation.getUrl());
 		context.setVariable("url",
-				" http://ridgelift.io:8080/api/healthvalidate/" + generateOtp.storeOTP(medicalValidation.getEmail())
+				" http://ridgelift.io:8080/api/personalrecordsvalidate/" + generateOtp.storeOTP(medicalValidation.getEmail())
 						+ "/" + medicalValidation.getSlno() + "/" + user.getLogin() + "/" + medicalValidation.getEmail()
 						+ "/" + medicalValidation.getType());
 		String content = templateEngine.process("personal", context);

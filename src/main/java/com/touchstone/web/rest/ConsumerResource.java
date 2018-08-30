@@ -656,7 +656,7 @@ public class ConsumerResource {
 		inquiryRepository.save(inquiry);
 		mailService
 				.sendEmail(
-						"my3d3d@gmail.com", "Inquiry", "Name: " + inquiry.getName() + "\n Phone " + inquiry.getPhone()
+						"info@ridgelift.com", "Inquiry", "Name: " + inquiry.getName() + "\n Phone " + inquiry.getPhone()
 								+ "\n Email: " + inquiry.getEmail() + "\n Message " + inquiry.getMessage(),
 						false, true);
 		return new ResponseEntity(HttpStatus.CREATED);
