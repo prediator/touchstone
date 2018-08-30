@@ -16,6 +16,8 @@ public class Tax implements Serializable {
 	private String path;
 
 	private String tax_paid;
+	
+	private String accountYear;
 
 	private String userId;
 
@@ -43,9 +45,18 @@ public class Tax implements Serializable {
 		this.userId = userId;
 	}
 
+	public String getAccountYear() {
+		return accountYear;
+	}
+
+	public void setAccountYear(String accountYear) {
+		this.accountYear = accountYear;
+	}
+
 	@Override
 	public String toString() {
-		return "Tax [path=" + path + ", tax_paid=" + tax_paid + ", userId=" + userId + "]";
+		return "Tax [path=" + path + ", tax_paid=" + tax_paid + ", accountYear=" + accountYear + ", userId=" + userId
+				+ "]";
 	}
 
 	 
