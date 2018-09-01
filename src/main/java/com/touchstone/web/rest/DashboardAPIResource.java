@@ -15,7 +15,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
@@ -30,9 +32,12 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.codahale.metrics.annotation.Timed;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.touchstone.config.Constants;
 import com.touchstone.domain.User;
+import com.touchstone.repository.AlertsRepository;
 import com.touchstone.repository.AwardsRepository;
 import com.touchstone.repository.BankRepository;
 import com.touchstone.repository.CreditRepository;
@@ -45,7 +50,6 @@ import com.touchstone.repository.TaxRepository;
 import com.touchstone.service.MailService;
 import com.touchstone.service.PersonalService;
 import com.touchstone.service.UserService;
-import com.touchstone.service.dto.AddIous;
 import com.touchstone.service.dto.Alert;
 import com.touchstone.service.dto.AwardsRecognitions;
 import com.touchstone.service.dto.BankDetails;
@@ -59,6 +63,7 @@ import com.touchstone.service.dto.HealthCareReport_;
 import com.touchstone.service.dto.HealthCare_;
 import com.touchstone.service.dto.InsuranceClaim_;
 import com.touchstone.service.dto.InsuranceDetails_;
+import com.touchstone.service.dto.Ious;
 import com.touchstone.service.dto.MiscellaneousAssetDetails;
 import com.touchstone.service.dto.PersonalRecords;
 import com.touchstone.service.dto.ProfileDTO;
@@ -103,6 +108,8 @@ public class DashboardAPIResource {
 
 	private MiscellaneousRepository miscellaneousRepository;
 
+	private AlertsRepository alertsRepository;
+
 	private PersonalService personalService;
 	private final SpringTemplateEngine templateEngine;
 	private final MessageSource messageSource;
@@ -115,7 +122,7 @@ public class DashboardAPIResource {
 			IousRepository iousRepository, AwardsRepository awardsRepository, InsuranceRepository insuranceRepository,
 			MiscellaneousRepository miscellaneousRepository, PersonalRepository personalRepository,
 			PersonalService personalService, SpringTemplateEngine templateEngine, MessageSource messageSource,
-			JHipsterProperties jHipsterProperties, JavaMailSender javaMailSender) {
+			JHipsterProperties jHipsterProperties, JavaMailSender javaMailSender, AlertsRepository alertsRepository) {
 		this.userService = userService;
 		this.mailService = mailService;
 		this.taxRepository = taxRepository;
@@ -132,6 +139,7 @@ public class DashboardAPIResource {
 		this.messageSource = messageSource;
 		this.jHipsterProperties = jHipsterProperties;
 		this.javaMailSender = javaMailSender;
+		this.alertsRepository = alertsRepository;
 	}
 
 	@GetMapping("/getDashboard")
@@ -170,7 +178,7 @@ public class DashboardAPIResource {
 				countValid++;
 			}
 		}
-		for (AddIous d : personalRecords.getIous()) {
+		for (Ious d : personalRecords.getIous()) {
 			if (!StringUtils.equals(d.getValidation().getValidationStatus(), "VALIDATE")) {
 				countValid++;
 			}
@@ -291,10 +299,10 @@ public class DashboardAPIResource {
 	@GetMapping("/getAlerts")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<List<Alert>> getAlerts(Principal login) throws IOException {
+	public ResponseEntity<List<Alert>> getAlerts(Principal login ) throws IOException {
 		User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
 		RestTemplate rt = new RestTemplate();
-		String uri = new String(Constants.Url + "/queries/selectHealthByHealthId?healthId=" + user.getHealthId());
+		String uri = new String(Constants.Url + "/queries/selectHealthByHealthId?healthId=10022764702391465219");
 
 		List<Health> data = rt.getForObject(uri, List.class);
 
@@ -306,13 +314,43 @@ public class DashboardAPIResource {
 		for (HealthCare_ h : health.getHealthCare()) {
 			Alert a = new Alert();
 			if (h.getNeedCheckUpReminder() == true) {
-				a.setDate(h.getDateOfReport());
-				a.setHealthReportTypeName(h.getHealthReportTypeName());
-				alert.add(a);
+				try {
+					if (alertsRepository.findOne(h.getHealthCareId()).isStatus()) {
+						a.setDate(h.getDateOfReport());
+						a.setId(h.getHealthCareId());
+						a.setHealthReportTypeName(h.getHealthReportTypeName());
+						alert.add(a);
+					}
+
+				} catch (Exception e) {
+					a.setDate(h.getDateOfReport());
+					a.setId(h.getHealthCareId());
+					a.setHealthReportTypeName(h.getHealthReportTypeName());
+					alert.add(a);
+				}
+				
 			}
 		}
 
 		return new ResponseEntity<List<Alert>>(alert, HttpStatus.ACCEPTED);
+
+	}
+
+	@PostMapping("/setAlerts")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public ResponseEntity<Alert> getAlertsPost(@RequestParam("alert") String alerts, Principal login)
+			throws JsonParseException, JsonMappingException, IOException {
+
+		ObjectMapper jsonParserClient = new ObjectMapper();
+		Alert alert = jsonParserClient.readValue(alerts, Alert.class);
+
+		if (alert.getId() != null) {
+			alert.setStatus(false);
+			alertsRepository.save(alert);
+
+		}
+		return new ResponseEntity<Alert>(alert, HttpStatus.ACCEPTED);
 
 	}
 

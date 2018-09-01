@@ -12,7 +12,7 @@ public class PersonalRecords {
 	private List<CreditReport> creditReport = null;
 	private List<BankDetails> bankDetails = null;
 	private List<PropertyDetails> propertyDetails = null;
-	private List<AddIous> ious = null;
+	private List<Ious> ious = null;
 	private List<AwardsRecognitions> awardsRecognitions = null;
 	private List<InsuranceDetails_> insuranceDetails = null;
 	private List<MiscellaneousAssetDetails> miscellaneousAssetDetails = null;
@@ -90,11 +90,11 @@ public class PersonalRecords {
 		this.propertyDetails = propertyDetails;
 	}
 
-	public List<AddIous> getIous() {
+	public List<Ious> getIous() {
 		return ious;
 	}
 
-	public void setIous(List<AddIous> ious) {
+	public void setIous(List<Ious> ious) {
 		this.ious = ious;
 	}
 

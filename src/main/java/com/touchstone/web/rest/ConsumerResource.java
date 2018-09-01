@@ -522,8 +522,12 @@ public class ConsumerResource {
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
 	public void test() {
-		mailService.sendEmail("my3d3d@gmail.com", "Account Created", "http://ridgelift.io:8080/api/validedEmail/"
-				+ generateOtp.storeOTP("my3d3d@gmail.com") + "/" + "my3d3d@gmail.com", false, true);
+		Locale locale = Locale.forLanguageTag("en");
+		Context context = new Context(locale);
+		context.setVariable("url", "http://ridgelift.io:8080/api/verifyc/");
+		String content = templateEngine.process("employment", context);
+		String subject = messageSource.getMessage("email.activation.title", null, locale);
+		sendEmail("my3d3d@gmail.com", subject, content, false, true);
 	}
 
 	/**

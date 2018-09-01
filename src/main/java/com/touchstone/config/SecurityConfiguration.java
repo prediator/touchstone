@@ -111,7 +111,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
             .antMatchers("/api/personalrecordsvalidate/**/**/**/**/**").permitAll()
             
             .antMatchers("/api/getAlerts").permitAll()
-            
+            .antMatchers("/api/setAlerts").permitAll()
             .antMatchers("/api/validateCertification").permitAll()
             .antMatchers("/api/Consumer").permitAll()
             .antMatchers("/api/addCertification").permitAll()

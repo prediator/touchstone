@@ -7,51 +7,26 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
-import org.thymeleaf.spring4.SpringTemplateEngine;
 
-import com.amazonaws.AmazonClientException;
-import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.s3.model.ObjectListing;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.touchstone.config.Constants;
 import com.touchstone.domain.User;
-import com.touchstone.repository.AwardsRepository;
-import com.touchstone.repository.BankRepository;
-import com.touchstone.repository.CreditRepository;
-import com.touchstone.repository.InsuranceRepository;
-import com.touchstone.repository.IousRepository;
-import com.touchstone.repository.MiscellaneousRepository;
-import com.touchstone.repository.PersonalRepository;
-import com.touchstone.repository.PropertyRepository;
-import com.touchstone.repository.TaxRepository;
-import com.touchstone.service.MailService;
-import com.touchstone.service.PersonalService;
 import com.touchstone.service.UserService;
-import com.touchstone.service.dto.AddIous;
 import com.touchstone.service.dto.Ailment_;
 import com.touchstone.service.dto.AwardsRecognitions;
 import com.touchstone.service.dto.BankDetails;
 import com.touchstone.service.dto.Certification;
 import com.touchstone.service.dto.CreditReport;
-import com.touchstone.service.dto.DashboardStats;
 import com.touchstone.service.dto.Education;
 import com.touchstone.service.dto.Experience;
 import com.touchstone.service.dto.Health;
@@ -59,6 +34,7 @@ import com.touchstone.service.dto.HealthCareReport_;
 import com.touchstone.service.dto.HealthCare_;
 import com.touchstone.service.dto.InsuranceClaim_;
 import com.touchstone.service.dto.InsuranceDetails_;
+import com.touchstone.service.dto.Ious;
 import com.touchstone.service.dto.MiscellaneousAssetDetails;
 import com.touchstone.service.dto.MyVaultDTO;
 import com.touchstone.service.dto.PersonalRecords;
@@ -67,10 +43,6 @@ import com.touchstone.service.dto.Project;
 import com.touchstone.service.dto.PropertyDetails;
 import com.touchstone.service.dto.Skills;
 import com.touchstone.service.dto.TaxDetails;
-import com.touchstone.service.dto.Alert;
-import com.touchstone.web.rest.util.GenerateOTP;
-
-import io.github.jhipster.config.JHipsterProperties;
 
 /**
  * REST controller for adding certificate, Education, Experience, Project,
@@ -256,7 +228,7 @@ public class VaultAPIResource {
 		List<CreditReport> credit = personalRecords.getCreditReport();
 		List<BankDetails> bank = personalRecords.getBankDetails();
 		List<PropertyDetails> property = personalRecords.getPropertyDetails();
-		List<AddIous> ious = personalRecords.getIous();
+		List<Ious> ious = personalRecords.getIous();
 		List<AwardsRecognitions> awards = personalRecords.getAwardsRecognitions();
 		List<InsuranceDetails_> insurance = personalRecords.getInsuranceDetails();
 		List<MiscellaneousAssetDetails> misc = personalRecords.getMiscellaneousAssetDetails();
@@ -316,10 +288,10 @@ public class VaultAPIResource {
 		}
 		
 		if(ious!=null && !ious.isEmpty()) {
-			for(AddIous t : ious) {
+			for(Ious t : ious) {
 				temp = new MyVaultDTO();
 				try {
-					url = new URL(t.getIous().getPath());
+					url = new URL(t.getPath());
 					temp_filename = FilenameUtils.getName(url.getPath());
 				}catch (Exception e) {
 					temp_filename = null;
@@ -327,7 +299,7 @@ public class VaultAPIResource {
 				if(temp_filename!=null) {
 					temp.setFilename(temp_filename);
 					temp.setType("ious");
-					temp.setPath(t.getIous().getPath());
+					temp.setPath(t.getPath());
 					list.add(temp);
 				}
 			}	
