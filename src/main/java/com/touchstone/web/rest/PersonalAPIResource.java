@@ -3,8 +3,11 @@ package com.touchstone.web.rest;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -66,6 +69,7 @@ import com.touchstone.repository.MiscellaneousRepository;
 import com.touchstone.repository.PersonalRepository;
 import com.touchstone.repository.PropertyRepository;
 import com.touchstone.repository.TaxRepository;
+import com.touchstone.repository.UserRepository;
 import com.touchstone.service.MailService;
 import com.touchstone.service.PersonalService;
 import com.touchstone.service.UserService;
@@ -124,6 +128,7 @@ public class PersonalAPIResource {
 	private AwardsRepository awardsRepository;
 
 	private InsuranceRepository insuranceRepository;
+	private final UserRepository userRepository;
 
 	private MiscellaneousRepository miscellaneousRepository;
 
@@ -139,7 +144,7 @@ public class PersonalAPIResource {
 			IousRepository iousRepository, AwardsRepository awardsRepository, InsuranceRepository insuranceRepository,
 			MiscellaneousRepository miscellaneousRepository, PersonalRepository personalRepository,
 			PersonalService personalService, SpringTemplateEngine templateEngine, MessageSource messageSource,
-			JHipsterProperties jHipsterProperties, JavaMailSender javaMailSender) {
+			JHipsterProperties jHipsterProperties, JavaMailSender javaMailSender, UserRepository userRepository) {
 		this.userService = userService;
 		this.mailService = mailService;
 		this.taxRepository = taxRepository;
@@ -156,15 +161,55 @@ public class PersonalAPIResource {
 		this.messageSource = messageSource;
 		this.jHipsterProperties = jHipsterProperties;
 		this.javaMailSender = javaMailSender;
+		this.userRepository = userRepository;
 	}
 
-	@GetMapping("/personalrecordsvalidate/{otp}/{slno}/{uname}/{email}/{type}")
+	@PostMapping("/uploadimage")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public void UpdateName(@RequestParam(name = "file", required = false) MultipartFile file, Principal login)
+			throws IOException {
+		User user = userRepository.findOneByLogin(login.getName()).get();
+
+		File dir = new File(tmpDir);
+
+		dir.mkdirs();
+		if (dir.isDirectory() && file != null) {
+			File serverFile = new File(dir, file.getOriginalFilename());
+			serverFile.setReadable(true, false);
+			BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(serverFile));
+			stream.write(file.getBytes());
+			stream.close();
+			uploadFileToS3(file, user.getUserId(), "image");
+			serverFile.delete();
+
+			User usr = userService.getUserWithAuthoritiesByEmailId(user.getEmail()).get();
+			usr.setImage("https://s3.ap-south-1.amazonaws.com/touchstonebackend/" + user.getUserId() + "/image/"
+					+ file.getOriginalFilename());
+
+			userRepository.save(usr);
+		}
+	}
+
+	@GetMapping("/personalrecordsvalidate/{otp}/{slno}/{uname}/{email}/{type}/{desc}/{by}")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
 	public ResponseEntity<Map<String, String>> validateMedicalNew(@PathVariable Integer otp, @PathVariable String slno,
-			@PathVariable String uname, @PathVariable String email, @PathVariable String type)
-			throws JsonProcessingException {
+			@PathVariable String uname, @PathVariable String email, @PathVariable String type,
+			@PathVariable String desc, @PathVariable String by) throws JsonProcessingException {
 		User user = userService.getUserWithAuthoritiesByLogin(uname).get();
+		String pattern = "yyyy-MM-dd HH:mm:ss";
+		SimpleDateFormat simpleDateFormat = new SimpleDateFormat(pattern);
+		String date = simpleDateFormat.format(new Date());
+
+		Validation valid = new Validation();
+		valid.set$class("org.touchstone.basic.Validation");
+		valid.setValidationStatus("VALIDATED");
+		valid.setValidationType("MANUAL");
+		valid.setValidationBy(by);
+		valid.setValidationDate(date);
+		valid.setValidationEmail(email);
+		valid.setValidationNote(desc);
 
 		if (generateOtp.checkOTP(email, otp) == 1) {
 			if (StringUtils.equals(type, "taxPaid")) {
@@ -177,14 +222,6 @@ public class PersonalAPIResource {
 				taxDetails.setTaxDetailsId(slno);
 				taxDetails.setTaxPaid("");
 
-				Validation valid = new Validation();
-				valid.set$class("org.touchstone.basic.Validation");
-				valid.setValidationStatus("VALIDATED");
-				valid.setValidationType("MANUAL");
-				valid.setValidationBy("");
-				valid.setValidationDate("");
-				valid.setValidationEmail("");
-				valid.setValidationNote("");
 				taxDetails.setValidation(valid);
 
 				addTaxDetails.setTaxDetails(taxDetails);
@@ -209,14 +246,6 @@ public class PersonalAPIResource {
 				creditReport.setPath("");
 				creditReport.setReportdate("");
 
-				Validation valid = new Validation();
-				valid.set$class("org.touchstone.basic.Validation");
-				valid.setValidationStatus("VALIDATED");
-				valid.setValidationType("MANUAL");
-				valid.setValidationBy("");
-				valid.setValidationDate("");
-				valid.setValidationEmail("");
-				valid.setValidationNote("");
 				creditReport.setValidation(valid);
 
 				addCreditReport.setCreditReport(creditReport);
@@ -243,14 +272,6 @@ public class PersonalAPIResource {
 				bankDetails.setIfsc("");
 				bankDetails.setPath("");
 
-				Validation valid = new Validation();
-				valid.set$class("org.touchstone.basic.Validation");
-				valid.setValidationStatus("VALIDATED");
-				valid.setValidationType("MANUAL");
-				valid.setValidationBy("");
-				valid.setValidationDate("");
-				valid.setValidationEmail("");
-				valid.setValidationNote("");
 				bankDetails.setValidation(valid);
 				addBankDetails.setBankDetails(bankDetails);
 
@@ -274,15 +295,6 @@ public class PersonalAPIResource {
 				propertyDetails.setPropertyDetailsId(slno);
 				propertyDetails.setType("");
 
-				Validation valid = new Validation();
-				valid.set$class("org.touchstone.basic.Validation");
-				valid.setValidationStatus("VALIDATED");
-				valid.setValidationType("MANUAL");
-				valid.setValidationBy("");
-				valid.setValidationDate("");
-				valid.setValidationEmail("");
-				valid.setValidationNote("");
-
 				propertyDetails.setValidation(valid);
 				addPropertyDetails.setPropertyDetails(propertyDetails);
 
@@ -304,15 +316,6 @@ public class PersonalAPIResource {
 				ious.setPath("");
 				ious.setType("");
 				ious.setIousId(slno);
-
-				Validation valid = new Validation();
-				valid.set$class("org.touchstone.basic.Validation");
-				valid.setValidationStatus("VALIDATED");
-				valid.setValidationType("MANUAL");
-				valid.setValidationBy("");
-				valid.setValidationDate("");
-				valid.setValidationEmail("");
-				valid.setValidationNote("");
 
 				ious.setValidation(valid);
 				addIous.setIous(ious);
@@ -339,14 +342,6 @@ public class PersonalAPIResource {
 				awardsRecognitions.setTitle("");
 				awardsRecognitions.setYear("");
 
-				Validation valid = new Validation();
-				valid.set$class("org.touchstone.basic.Validation");
-				valid.setValidationStatus("VALIDATED");
-				valid.setValidationType("MANUAL");
-				valid.setValidationBy("");
-				valid.setValidationDate("");
-				valid.setValidationEmail("");
-				valid.setValidationNote("");
 				awardsRecognitions.setValidation(valid);
 
 				addAwardsRecognitions.setAwardsRecognitions(awardsRecognitions);
@@ -373,14 +368,6 @@ public class PersonalAPIResource {
 				insuranceDetails_.setTemplate(Boolean.valueOf(""));
 				insuranceDetails_.setType("");
 
-				Validation valid = new Validation();
-				valid.set$class("org.touchstone.basic.Validation");
-				valid.setValidationStatus("VALIDATED");
-				valid.setValidationType("MANUAL");
-				valid.setValidationBy("");
-				valid.setValidationDate("");
-				valid.setValidationEmail("");
-				valid.setValidationNote("");
 				insuranceDetails_.setValidation(valid);
 				addInsuranceDetails.setInsuranceDetails(insuranceDetails_);
 
@@ -406,14 +393,6 @@ public class PersonalAPIResource {
 				miscellaneousAssetDetails.setTemplate(false);
 				miscellaneousAssetDetails.setType("");
 
-				Validation valid = new Validation();
-				valid.set$class("org.touchstone.basic.Validation");
-				valid.setValidationStatus("VALIDATED");
-				valid.setValidationType("MANUAL");
-				valid.setValidationBy("");
-				valid.setValidationDate("");
-				valid.setValidationEmail("");
-				valid.setValidationNote("");
 				miscellaneousAssetDetails.setValidation(valid);
 
 				addMiscellaneousAssetDetails.setMiscellaneousAssetDetails(miscellaneousAssetDetails);
@@ -445,6 +424,19 @@ public class PersonalAPIResource {
 	public void validateMedical(@RequestBody MedicalValidation medicalValidation, Principal login)
 			throws JsonProcessingException {
 		User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
+		String pattern = "yyyy-MM-dd HH:mm:ss";
+		SimpleDateFormat simpleDateFormat = new SimpleDateFormat(pattern);
+
+		String date = simpleDateFormat.format(new Date());
+
+		Validation valid = new Validation();
+		valid.set$class("org.touchstone.basic.Validation");
+		valid.setValidationStatus("IN_PROGRESS");
+		valid.setValidationType("MANUAL");
+		valid.setValidationBy(medicalValidation.getValidationBy());
+		valid.setValidationDate(date);
+		valid.setValidationEmail(medicalValidation.getEmail());
+		valid.setValidationNote(medicalValidation.getDescription());
 
 		if (StringUtils.equals(medicalValidation.getType(), "taxPaid")) {
 			AddTaxDetails addTaxDetails = new AddTaxDetails();
@@ -455,14 +447,6 @@ public class PersonalAPIResource {
 			taxDetails.setTaxDetailsId(medicalValidation.getSlno());
 			taxDetails.setTaxPaid("");
 
-			Validation valid = new Validation();
-			valid.set$class("org.touchstone.basic.Validation");
-			valid.setValidationStatus("IN_PROGRESS");
-			valid.setValidationType("MANUAL");
-			valid.setValidationBy("");
-			valid.setValidationDate("");
-			valid.setValidationEmail("");
-			valid.setValidationNote("");
 			taxDetails.setValidation(valid);
 
 			addTaxDetails.setTaxDetails(taxDetails);
@@ -475,7 +459,6 @@ public class PersonalAPIResource {
 			rt.getMessageConverters().add(new StringHttpMessageConverter());
 			String uri = new String(Constants.Url + "/validateTaxDetails");
 			rt.postForObject(uri, addTaxDetails, AddTaxDetails.class);
-			;
 
 		} else if (StringUtils.equals(medicalValidation.getType(), "creditReport")) {
 			AddCreditReport addCreditReport = new AddCreditReport();
@@ -486,14 +469,6 @@ public class PersonalAPIResource {
 			creditReport.setPath("");
 			creditReport.setReportdate("");
 
-			Validation valid = new Validation();
-			valid.set$class("org.touchstone.basic.Validation");
-			valid.setValidationStatus("IN_PROGRESS");
-			valid.setValidationType("MANUAL");
-			valid.setValidationBy("");
-			valid.setValidationDate("");
-			valid.setValidationEmail("");
-			valid.setValidationNote("");
 			creditReport.setValidation(valid);
 
 			addCreditReport.setCreditReport(creditReport);
@@ -519,14 +494,6 @@ public class PersonalAPIResource {
 			bankDetails.setIfsc("");
 			bankDetails.setPath("");
 
-			Validation valid = new Validation();
-			valid.set$class("org.touchstone.basic.Validation");
-			valid.setValidationStatus("IN_PROGRESS");
-			valid.setValidationType("MANUAL");
-			valid.setValidationBy("");
-			valid.setValidationDate("");
-			valid.setValidationEmail("");
-			valid.setValidationNote("");
 			bankDetails.setValidation(valid);
 			addBankDetails.setBankDetails(bankDetails);
 
@@ -550,15 +517,6 @@ public class PersonalAPIResource {
 			propertyDetails.setPropertyDetailsId(medicalValidation.getSlno());
 			propertyDetails.setType("");
 
-			Validation valid = new Validation();
-			valid.set$class("org.touchstone.basic.Validation");
-			valid.setValidationStatus("IN_PROGRESS");
-			valid.setValidationType("MANUAL");
-			valid.setValidationBy("");
-			valid.setValidationDate("");
-			valid.setValidationEmail("");
-			valid.setValidationNote("");
-
 			propertyDetails.setValidation(valid);
 			addPropertyDetails.setPropertyDetails(propertyDetails);
 
@@ -580,15 +538,6 @@ public class PersonalAPIResource {
 			ious.setPath("");
 			ious.setType("");
 			ious.setIousId(medicalValidation.getSlno());
-
-			Validation valid = new Validation();
-			valid.set$class("org.touchstone.basic.Validation");
-			valid.setValidationStatus("IN_PROGRESS");
-			valid.setValidationType("MANUAL");
-			valid.setValidationBy("");
-			valid.setValidationDate("");
-			valid.setValidationEmail("");
-			valid.setValidationNote("");
 
 			ious.setValidation(valid);
 			addIous.setIous(ious);
@@ -615,14 +564,6 @@ public class PersonalAPIResource {
 			awardsRecognitions.setTitle("");
 			awardsRecognitions.setYear("");
 
-			Validation valid = new Validation();
-			valid.set$class("org.touchstone.basic.Validation");
-			valid.setValidationStatus("IN_PROGRESS");
-			valid.setValidationType("MANUAL");
-			valid.setValidationBy("");
-			valid.setValidationDate("");
-			valid.setValidationEmail("");
-			valid.setValidationNote("");
 			awardsRecognitions.setValidation(valid);
 
 			addAwardsRecognitions.setAwardsRecognitions(awardsRecognitions);
@@ -649,14 +590,6 @@ public class PersonalAPIResource {
 			insuranceDetails_.setTemplate(Boolean.valueOf(""));
 			insuranceDetails_.setType("");
 
-			Validation valid = new Validation();
-			valid.set$class("org.touchstone.basic.Validation");
-			valid.setValidationStatus("IN_PROGRESS");
-			valid.setValidationType("MANUAL");
-			valid.setValidationBy("");
-			valid.setValidationDate("");
-			valid.setValidationEmail("");
-			valid.setValidationNote("");
 			insuranceDetails_.setValidation(valid);
 			addInsuranceDetails.setInsuranceDetails(insuranceDetails_);
 
@@ -682,14 +615,6 @@ public class PersonalAPIResource {
 			miscellaneousAssetDetails.setTemplate(false);
 			miscellaneousAssetDetails.setType("");
 
-			Validation valid = new Validation();
-			valid.set$class("org.touchstone.basic.Validation");
-			valid.setValidationStatus("IN_PROGRESS");
-			valid.setValidationType("MANUAL");
-			valid.setValidationBy("");
-			valid.setValidationDate("");
-			valid.setValidationEmail("");
-			valid.setValidationNote("");
 			miscellaneousAssetDetails.setValidation(valid);
 
 			addMiscellaneousAssetDetails.setMiscellaneousAssetDetails(miscellaneousAssetDetails);
@@ -706,17 +631,21 @@ public class PersonalAPIResource {
 
 		Locale locale = Locale.forLanguageTag("en");
 		Context context = new Context(locale);
-		context.setVariable("by", "Hi " + medicalValidation.getValidationBy());
+
+		context.setVariable("doc", medicalValidation.getPath());
+		context.setVariable("consumer", user.getFirstName() + " " + user.getLastName());
 		context.setVariable("desc", medicalValidation.getDescription());
-		System.out.println("---------" + medicalValidation);
-		context.setVariable("document", medicalValidation.getUrl());
+		context.setVariable("name", medicalValidation.getValidationBy());
+		context.setVariable("type",
+				medicalValidation.getType().substring(0, 1).toUpperCase() + medicalValidation.getType().substring(1));
 		context.setVariable("url",
-				" http://ridgelift.io:8080/api/personalrecordsvalidate/" + generateOtp.storeOTP(medicalValidation.getEmail())
-						+ "/" + medicalValidation.getSlno() + "/" + user.getLogin() + "/" + medicalValidation.getEmail()
-						+ "/" + medicalValidation.getType());
-		String content = templateEngine.process("personal", context);
+				"http://ridgelift.io:8080/api/personalrecordsvalidate/"
+						+ generateOtp.storeOTP(medicalValidation.getEmail()) + "/" + medicalValidation.getSlno() + "/"
+						+ user.getLogin() + "/" + medicalValidation.getEmail() + "/" + medicalValidation.getType() + "/"
+						+ medicalValidation.getDescription() + "/" + medicalValidation.getValidationBy());
+		String content = templateEngine.process("education", context);
 		String subject = messageSource.getMessage("email.activation.title", null, locale);
-		sendEmail(user.getEmail(), subject, content, false, true);
+		sendEmail(medicalValidation.getEmail(), subject, content, false, true);
 
 	}
 

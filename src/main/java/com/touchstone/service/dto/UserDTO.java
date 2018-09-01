@@ -57,7 +57,7 @@ public class UserDTO {
 	private String healthId;
 	private String personalId;
 	private UserType userType;
-
+	private String image;
 	private String zipcode;
 	private boolean activated = false;
 
@@ -70,6 +70,7 @@ public class UserDTO {
 	public UserDTO(User user) {
 		this.userId = user.getLogin();
 		this.firstName = user.getFirstName();
+		this.image = user.getImage();
 		this.lastName = user.getLastName();
 		this.emailId = user.getEmail();
 		this.activated = user.getActivated();
@@ -84,6 +85,14 @@ public class UserDTO {
 		}
 
 		this.authorities = user.getAuthorities().stream().map(Authority::getName).collect(Collectors.toSet());
+	}
+
+	public String getImage() {
+		return image;
+	}
+
+	public void setImage(String image) {
+		this.image = image;
 	}
 
 	public String getPersonalId() {

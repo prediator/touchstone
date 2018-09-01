@@ -96,12 +96,23 @@ public class User implements Serializable {
 
 	@Field("personal_id")
 	private String personalId;
+	
+	@Field("image")
+	private String image;
 
 	@JsonIgnore
 	private Set<Authority> authorities = new HashSet<>();
 
 	public String getHealthId() {
 		return healthId;
+	}
+
+	public String getImage() {
+		return image;
+	}
+
+	public void setImage(String image) {
+		this.image = image;
 	}
 
 	public String getPersonalId() {

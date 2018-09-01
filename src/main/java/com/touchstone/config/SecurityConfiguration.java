@@ -108,7 +108,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
             .antMatchers("/api/tet").permitAll()
             .antMatchers("/api/getPersonalRecords**").permitAll()
             .antMatchers("/api/healthvalidate/**/**/**/**/**").permitAll()
-            .antMatchers("/api/personalrecordsvalidate/**/**/**/**/**").permitAll()
+            .antMatchers("/api/personalrecordsvalidate/**/**/**/**/**/**/**").permitAll()
             
             .antMatchers("/api/getAlerts").permitAll()
             .antMatchers("/api/setAlerts").permitAll()

@@ -525,7 +525,7 @@ public class ConsumerResource {
 		Locale locale = Locale.forLanguageTag("en");
 		Context context = new Context(locale);
 		context.setVariable("url", "http://ridgelift.io:8080/api/verifyc/");
-		String content = templateEngine.process("employment", context);
+		String content = templateEngine.process("consumer", context);
 		String subject = messageSource.getMessage("email.activation.title", null, locale);
 		sendEmail("my3d3d@gmail.com", subject, content, false, true);
 	}
