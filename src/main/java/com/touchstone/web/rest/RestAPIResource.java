@@ -1,11 +1,24 @@
 package com.touchstone.web.rest;
 
 import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.Principal;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -23,6 +36,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
+import org.thymeleaf.context.Context;
 
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.auth.AWSCredentials;
@@ -42,7 +56,6 @@ import com.touchstone.service.UserService;
 import com.touchstone.service.dto.Certificate;
 import com.touchstone.service.dto.CertificateValidation;
 import com.touchstone.service.dto.Certification;
-import com.touchstone.service.dto.Consumer;
 import com.touchstone.service.dto.Education;
 import com.touchstone.service.dto.EducationDTO;
 import com.touchstone.service.dto.Experience;
@@ -51,7 +64,6 @@ import com.touchstone.service.dto.Project;
 import com.touchstone.service.dto.ProjectDTO;
 import com.touchstone.service.dto.SkillDTO;
 import com.touchstone.service.dto.Skills;
-import com.touchstone.service.dto.Validation;
 import com.touchstone.service.dto.ValidationEmail;
 import com.touchstone.service.util.RandomUtil;
 import com.touchstone.web.rest.util.GenerateOTP;
@@ -66,8 +78,7 @@ public class RestAPIResource {
 
 	private final Logger log = LoggerFactory.getLogger(RestAPIResource.class);
 	private final UserService userService;
-	// private final String tmpDir =
-	// "C:\\Users\\Kadri\\Desktop\\Touch\\build\\libs\\";
+//	private final String tmpDir = "d:\\link\\";
 	private final String tmpDir = "/tmp/";
 	private GenerateOTP generateOtp = new GenerateOTP();
 	private final MailService mailService;
@@ -75,6 +86,140 @@ public class RestAPIResource {
 	public RestAPIResource(UserService userService, MailService mailService) {
 		this.userService = userService;
 		this.mailService = mailService;
+	}
+
+	public File convert(MultipartFile file) throws IOException {
+		File convFile = new File(file.getOriginalFilename());
+		convFile.createNewFile();
+		FileOutputStream fos = new FileOutputStream(convFile);
+		fos.write(file.getBytes());
+		fos.close();
+		return convFile;
+	}
+
+	private static void unzip(FileInputStream fis, String destDir) {
+		File dir = new File(destDir);
+		// create output directory if it doesn't exist
+		if (!dir.exists())
+			dir.mkdirs();
+		// buffer for read and write data to file
+		byte[] buffer = new byte[1024];
+		try {
+			ZipInputStream zis = new ZipInputStream(fis);
+			ZipEntry ze = zis.getNextEntry();
+			while (ze != null) {
+				String fileName = ze.getName();
+				File newFile = new File(destDir + File.separator + fileName);
+				System.out.println("Unzipping to " + newFile.getAbsolutePath());
+				// create directories for sub directories in zip
+				new File(newFile.getParent()).mkdirs();
+				FileOutputStream fos = new FileOutputStream(newFile);
+				int len;
+				while ((len = zis.read(buffer)) > 0) {
+					fos.write(buffer, 0, len);
+				}
+				fos.close();
+				// close this ZipEntry
+				zis.closeEntry();
+				ze = zis.getNextEntry();
+			}
+			// close last ZipEntry
+			zis.closeEntry();
+			zis.close();
+			fis.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+	}
+
+	/**
+	 * POST /addCertification : Add certification.
+	 *
+	 * @param Certificate the certificate data
+	 * @throws JsonProcessingException
+	 */
+	@PostMapping("/uploadlinkdin")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public ResponseEntity<String> uploadlinkdin(@RequestParam(name = "file", required = false) MultipartFile file,
+			Principal login) throws JsonProcessingException {
+		try {
+			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
+
+			FileInputStream fs = new FileInputStream(convert(file));
+			unzip(fs, tmpDir + "/" + user.getProfileId() + "/");
+			if (file != null) {
+				BufferedReader br = null;
+				String line = "";
+				String cvsSplitBy = ",";
+
+				try {
+					int i = 0;
+
+					String sl_no = RandomUtil.generateActivationKey();
+					br = new BufferedReader(new FileReader(tmpDir + "/" + user.getProfileId() + "/Certifications.csv"));
+					while ((line = br.readLine()) != null) {
+
+						if (i > 0) {
+							String[] data = line.split(cvsSplitBy);
+							Certificate certificate = new Certificate();
+							certificate.set$class("org.touchstone.basic.addCertification");
+							certificate.setCertification(new Certification());
+							certificate.getCertification().setCertification_slno(sl_no);
+							certificate.getCertification().set$class("org.touchstone.basic.Certification");
+							certificate.getCertification().setValidation(new CertificateValidation());
+							certificate.getCertification().getValidation().set$class("org.touchstone.basic.Validation");
+							certificate.getCertification().getValidation().setValidationStatus("VALIDATE");
+							certificate.getCertification().getValidation().setValidationType("MANUAL");
+							certificate.setProfile("resource:org.touchstone.basic.Profile#" + user.getProfileId());
+
+							certificate.getCertification().setCourseName(data[0]);
+							certificate.getCertification().setInstitute(data[2]);
+
+							// certificate.getCertification().setSupportingDocumentLinks(links);
+							ObjectMapper mappers = new ObjectMapper();
+							String jsonInString = mappers.writeValueAsString(certificate);
+							System.out.println(jsonInString);
+
+							RestTemplate rt = new RestTemplate();
+							rt.getMessageConverters().add(new StringHttpMessageConverter());
+							String uri = new String(Constants.Url + "/addCertification");
+							rt.postForObject(uri, certificate, Certificate.class);
+
+							System.out.println(data[0]);
+							System.out.println(data[2]);
+						}
+						i++;
+
+					}
+
+				} catch (FileNotFoundException e) {
+					e.printStackTrace();
+				} catch (IOException e) {
+					e.printStackTrace();
+				} finally {
+					if (br != null) {
+						try {
+							br.close();
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+					}
+				}
+
+			}
+			Files.walk(Paths.get(tmpDir + "/" + user.getProfileId())).filter(Files::isRegularFile).map(Path::toFile)
+					.forEach(File::delete);
+
+			return new ResponseEntity(HttpStatus.CREATED);
+		} catch (
+
+		Exception e) {
+
+			e.printStackTrace();
+			return new ResponseEntity(HttpStatus.BAD_REQUEST);
+		}
 	}
 
 	/**
@@ -95,9 +240,9 @@ public class RestAPIResource {
 			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
 			String[] links = new String[1];
 
-			
-			if(file!=null) {
-				links[0] = "https://s3.ap-south-1.amazonaws.com/touchstonebackend/" + user.getUserId() + "/certificate/"+ file.getOriginalFilename();
+			if (file != null) {
+				links[0] = "https://s3.ap-south-1.amazonaws.com/touchstonebackend/" + user.getUserId() + "/certificate/"
+						+ file.getOriginalFilename();
 				certificate.getCertification().setSupportingDocumentLinks(links);
 				String fileName = file.getOriginalFilename();
 				File dir = new File(tmpDir);
@@ -113,7 +258,7 @@ public class RestAPIResource {
 					serverFile.delete();
 				}
 			}
-			
+
 			certificate.set$class("org.touchstone.basic.addCertification");
 			certificate.getCertification().set$class("org.touchstone.basic.Certification");
 			certificate.getCertification().getValidation().set$class("org.touchstone.basic.Validation");
@@ -124,7 +269,7 @@ public class RestAPIResource {
 			String sl_no = RandomUtil.generateActivationKey();
 			certificate.getCertification().setCertification_slno(sl_no);
 
-			//certificate.getCertification().setSupportingDocumentLinks(links);
+			// certificate.getCertification().setSupportingDocumentLinks(links);
 			ObjectMapper mappers = new ObjectMapper();
 			String jsonInString = mappers.writeValueAsString(certificate);
 			System.out.println(jsonInString);
@@ -391,6 +536,13 @@ public class RestAPIResource {
 		}
 
 		// {otp}/{slno}/{uname}/{email}/{type}
+		
+//		Locale locale = Locale.forLanguageTag("en");
+//		Context context = new Context(locale);
+//		context.setVariable("url", "http://ridgelift.io:8080/api/verifyc/");
+//		String content = templateEngine.process("employment", context);
+//		String subject = messageSource.getMessage("email.activation.title", null, locale);
+//		sendEmail(validEmail.getEmail(), subject, content, false, true);
 
 		String message = "Dear " + validEmail.getValidationBy() + " " + validEmail.getDescription()
 				+ " http://ridgelift.io:8080/api/validateCertification/" + generateOtp.storeOTP(validEmail.getEmail())
@@ -420,13 +572,13 @@ public class RestAPIResource {
 			String sl_no = RandomUtil.generateActivationKey();
 			edu.getEducation().setEducation_slno(sl_no);
 
-			if (file != null ) {
+			if (file != null) {
 				String links = null;
 				String fileName = null;
 				File dir = new File(tmpDir);
 				dir.mkdirs();
-				links = "https://s3.ap-south-1.amazonaws.com/touchstonebackend/" + user.getUserId()
-						+ "/education/" + file.getOriginalFilename();
+				links = "https://s3.ap-south-1.amazonaws.com/touchstonebackend/" + user.getUserId() + "/education/"
+						+ file.getOriginalFilename();
 				fileName = file.getOriginalFilename();
 				if (dir.isDirectory()) {
 					File serverFile = new File(dir, fileName);
@@ -435,8 +587,8 @@ public class RestAPIResource {
 					stream.write(file.getBytes());
 					stream.close();
 					uploadFileToS3(file, user.getUserId(), "education");
-						serverFile.delete();
-					}
+					serverFile.delete();
+				}
 				edu.getEducation().setSupportingDocumentLinks(links.split("@@@##$!!!"));
 			} else {
 				edu.getEducation().setSupportingDocumentLinks(new String[0]);
@@ -638,8 +790,8 @@ public class RestAPIResource {
 			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
 
 			String[] links = new String[1];
-			
-			if(file !=null) {
+
+			if (file != null) {
 				links[0] = "https://s3.ap-south-1.amazonaws.com/touchstonebackend/" + user.getUserId() + "/experience/"
 						+ file.getOriginalFilename();
 				exp.getExperience().setSupportingDocumentLinks(links);
@@ -656,10 +808,8 @@ public class RestAPIResource {
 					stream.close();
 					uploadFileToS3(file, user.getUserId(), "experience");
 					serverFile.delete();
-				}				
+				}
 			}
-
-
 
 			String sl_no = RandomUtil.generateActivationKey();
 			exp.getExperience().setExperience_slno(sl_no);
@@ -670,7 +820,7 @@ public class RestAPIResource {
 			exp.setProfile("resource:org.touchstone.basic.Profile#" + user.getProfileId());
 			exp.getExperience().getValidation().setValidationStatus("VALIDATE");
 			exp.getExperience().getValidation().setValidationType("MANUAL");
-			//exp.getExperience().setSupportingDocumentLinks(links);
+			// exp.getExperience().setSupportingDocumentLinks(links);
 
 			ObjectMapper mappers = new ObjectMapper();
 			String jsonInString = mappers.writeValueAsString(exp);
@@ -706,8 +856,8 @@ public class RestAPIResource {
 			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
 
 			String[] links = new String[1];
-			
-			if(file !=null) {
+
+			if (file != null) {
 				links[0] = "https://s3.ap-south-1.amazonaws.com/touchstonebackend/" + user.getUserId() + "/project/"
 						+ file.getOriginalFilename();
 				project.getProject().setSupportingDocumentLinks(links);
@@ -724,10 +874,8 @@ public class RestAPIResource {
 					stream.close();
 					uploadFileToS3(file, user.getUserId(), "project");
 					serverFile.delete();
-				}				
+				}
 			}
-
-
 
 			String sl_no = RandomUtil.generateActivationKey();
 			project.getProject().setProject_slno(sl_no);
@@ -738,7 +886,7 @@ public class RestAPIResource {
 			project.setProfile("resource:org.touchstone.basic.Profile#" + user.getProfileId());
 			project.getProject().getValidation().setValidationStatus("VALIDATE");
 			project.getProject().getValidation().setValidationType("MANUAL");
-			//project.getProject().setSupportingDocumentLinks(links);
+			// project.getProject().setSupportingDocumentLinks(links);
 
 			ObjectMapper mappers = new ObjectMapper();
 			String jsonInString = mappers.writeValueAsString(project);
@@ -775,7 +923,7 @@ public class RestAPIResource {
 
 			String[] links = new String[1];
 
-			if(file !=null) {
+			if (file != null) {
 				links[0] = "https://s3.ap-south-1.amazonaws.com/touchstonebackend/" + user.getUserId() + "/skills/"
 						+ file.getOriginalFilename();
 				skill.getSkills().setSupportingDocumentLinks(links);
@@ -792,11 +940,8 @@ public class RestAPIResource {
 					stream.close();
 					uploadFileToS3(file, user.getUserId(), "skills");
 					serverFile.delete();
-				}	
+				}
 			}
-			
-			
-			
 
 			String sl_no = RandomUtil.generateActivationKey();
 			skill.getSkills().setSkill_slno(sl_no);
@@ -809,7 +954,7 @@ public class RestAPIResource {
 			skill.getSkills().getValidation().setValidationStatus("VALIDATE");
 			skill.getSkills().getValidation().setValidationType("MANUAL");
 			skill.getSkills().setExpertiseLevel("BEGINNER");
-			//skill.getSkills().setSupportingDocumentLinks(links);
+			// skill.getSkills().setSupportingDocumentLinks(links);
 
 			ObjectMapper mappers = new ObjectMapper();
 			String jsonInString = mappers.writeValueAsString(skill);
