@@ -18,6 +18,7 @@ import javax.mail.internet.MimeMessage;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.CacheManager;
 import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -138,7 +139,7 @@ public class PersonalAPIResource {
 	private final SpringTemplateEngine templateEngine;
 	private final MessageSource messageSource;
 	private final JHipsterProperties jHipsterProperties;
-
+	private final CacheManager cacheManager;
 	private final JavaMailSender javaMailSender;
 
 	public PersonalAPIResource(UserService userService, MailService mailService, TaxRepository taxRepository,
@@ -146,7 +147,7 @@ public class PersonalAPIResource {
 			IousRepository iousRepository, AwardsRepository awardsRepository, InsuranceRepository insuranceRepository,
 			MiscellaneousRepository miscellaneousRepository, PersonalRepository personalRepository,
 			PersonalService personalService, SpringTemplateEngine templateEngine, MessageSource messageSource,
-			JHipsterProperties jHipsterProperties, JavaMailSender javaMailSender, UserRepository userRepository) {
+			JHipsterProperties jHipsterProperties, JavaMailSender javaMailSender, UserRepository userRepository,CacheManager cacheManager) {
 		this.userService = userService;
 		this.mailService = mailService;
 		this.taxRepository = taxRepository;
@@ -164,6 +165,7 @@ public class PersonalAPIResource {
 		this.jHipsterProperties = jHipsterProperties;
 		this.javaMailSender = javaMailSender;
 		this.userRepository = userRepository;
+		this.cacheManager = cacheManager;
 	}
 
 	@PostMapping("/uploadimage")
@@ -172,7 +174,7 @@ public class PersonalAPIResource {
 	public void UpdateName(@RequestParam(name = "file", required = false) MultipartFile file, Principal login)
 			throws IOException {
 		User user = userRepository.findOneByLogin(login.getName()).get();
-
+		log.info("In add user:  "+user.getImage());
 		File dir = new File(tmpDir);
 
 		dir.mkdirs();
@@ -185,12 +187,22 @@ public class PersonalAPIResource {
 			uploadFileToS3(file, user.getUserId(), "image");
 			serverFile.delete();
 
-			User usr = userService.getUserWithAuthoritiesByEmailId(user.getEmail()).get();
+			User usr = userRepository.findOneByEmailIgnoreCase(user.getEmail()).get();
 			usr.setImage("https://s3.ap-south-1.amazonaws.com/touchstonebackend/" + user.getUserId() + "/image/"
 					+ file.getOriginalFilename());
 
 			userRepository.save(usr);
+			cacheManager.getCache(UserRepository.USERS_BY_LOGIN_CACHE).evict(user.getLogin());
+            cacheManager.getCache(UserRepository.USERS_BY_EMAIL_CACHE).evict(user.getEmail());
 		}
+	}
+	
+	@GetMapping("/getimage")
+	@Timed
+	public ResponseEntity<User> getProfilePic(Principal login) throws IOException {
+		User user = userRepository.findOneByLogin(login.getName()).get();
+		log.info("user:  "+user.getImage());
+		return new ResponseEntity<User>(user, HttpStatus.ACCEPTED);
 	}
 
 	@GetMapping("/getPersonalRecords")
