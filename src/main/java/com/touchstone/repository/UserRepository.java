@@ -29,6 +29,9 @@ public interface UserRepository extends MongoRepository<User, String> {
 
     @Cacheable(cacheNames = USERS_BY_LOGIN_CACHE)
     Optional<User> findOneByLogin(String login);
+    
+    
+    Optional<User> findOneByEmail(String email);
 
     Page<User> findAllByLoginNot(Pageable pageable, String login);
 }
