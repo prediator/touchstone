@@ -7,6 +7,8 @@ public class DashboardStats {
 	private Integer validRecords;
 
 	private Integer totalDocuments;
+	
+	private Integer percentage;
 
 	public Integer getTotalRecords() {
 		return totalRecords;
@@ -30,6 +32,14 @@ public class DashboardStats {
 
 	public void setTotalDocuments(Integer totalDocuments) {
 		this.totalDocuments = totalDocuments;
+	}
+
+	public Integer getPercentage() {
+		return percentage;
+	}
+
+	public void setPercentage(Integer percentage) {
+		this.percentage = percentage;
 	}
 
 }
