@@ -199,16 +199,16 @@ public class DashboardAPIResource {
 			}
 		}
 		
-/*		if(personalRecords!=null && personalRecords.getIous()!=null && !personalRecords.getIous().isEmpty()) {
+	if(personalRecords!=null && personalRecords.getIous()!=null && !personalRecords.getIous().isEmpty()) {
 			filled_details = filled_details + 1;
-			for (AddIous d : personalRecords.getIous()) {
+			for (Ious d : personalRecords.getIous()) {
 				if (!StringUtils.equals(d.getValidation().getValidationStatus(), "VALIDATE")) {
 					countValid++;
 				}
 			}	
 
 		}
-*/		
+	
 		if(personalRecords!=null && personalRecords.getAwardsRecognitions()!=null && !personalRecords.getAwardsRecognitions().isEmpty()) {
 			filled_details = filled_details + 1;
 			for (AwardsRecognitions d : personalRecords.getAwardsRecognitions()) {
