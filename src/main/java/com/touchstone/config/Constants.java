@@ -15,6 +15,7 @@ public final class Constants {
     public static final String Url = "http://18.209.29.75:3000/api";
     public static final String local = "http://localhost:9000/#/succ";
     public static final String live = "http://www.ridgelift.io/touchstone/#/succ";
+    public static final String liveReg = "http://www.ridgelift.io/touchstone/#/reg";
 
     private Constants() {
     }

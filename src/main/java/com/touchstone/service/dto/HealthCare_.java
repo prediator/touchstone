@@ -13,7 +13,7 @@ public class HealthCare_ {
 	private String healthReportTypeName = "";
 	String bloodPressure = "";
 	private String dateOfReport = "";
-	private Boolean needCheckUpReminder = false;
+	private Boolean needCheckUpReminder ;
 
 	@Override
 	public String toString() {

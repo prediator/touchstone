@@ -149,11 +149,11 @@ public class DashboardAPIResource {
 		User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
 		RestTemplate rt = new RestTemplate();
 		int countValid = 0;
-		
+
 		int filled_details = 0;
 		int calculatePercentageNumber = 13;
 		int final_percentage = 0;
-		
+
 		String uri = new String(
 				Constants.Url + "/queries/selectPersonalRecordByPersonalRecordId?personalId=" + user.getPersonalId());
 
@@ -163,16 +163,18 @@ public class DashboardAPIResource {
 		String jsonInString = mapper.writeValueAsString(data.get(0));
 		PersonalRecords personalRecords = mapper.readValue(jsonInString, PersonalRecords.class);
 
-		if(personalRecords!=null && personalRecords.getTaxDetails()!=null && !personalRecords.getTaxDetails().isEmpty()) {
+		if (personalRecords != null && personalRecords.getTaxDetails() != null
+				&& !personalRecords.getTaxDetails().isEmpty()) {
 			filled_details = filled_details + 1;
 			for (TaxDetails d : personalRecords.getTaxDetails()) {
 				if (!StringUtils.equals(d.getValidation().getValidationStatus(), "VALIDATE")) {
 					countValid++;
 				}
-			}	
+			}
 		}
-		
-		if(personalRecords!=null && personalRecords.getCreditReport()!=null && !personalRecords.getCreditReport().isEmpty()) {
+
+		if (personalRecords != null && personalRecords.getCreditReport() != null
+				&& !personalRecords.getCreditReport().isEmpty()) {
 			filled_details = filled_details + 1;
 			for (CreditReport d : personalRecords.getCreditReport()) {
 				if (!StringUtils.equals(d.getValidation().getValidationStatus(), "VALIDATE")) {
@@ -180,17 +182,19 @@ public class DashboardAPIResource {
 				}
 			}
 		}
-		
-		if(personalRecords!=null && personalRecords.getBankDetails()!=null && !personalRecords.getBankDetails().isEmpty()) {
+
+		if (personalRecords != null && personalRecords.getBankDetails() != null
+				&& !personalRecords.getBankDetails().isEmpty()) {
 			filled_details = filled_details + 1;
 			for (BankDetails d : personalRecords.getBankDetails()) {
 				if (!StringUtils.equals(d.getValidation().getValidationStatus(), "VALIDATE")) {
 					countValid++;
 				}
-			}	
+			}
 		}
-		
-		if(personalRecords!=null && personalRecords.getPropertyDetails()!=null && !personalRecords.getPropertyDetails().isEmpty()) {
+
+		if (personalRecords != null && personalRecords.getPropertyDetails() != null
+				&& !personalRecords.getPropertyDetails().isEmpty()) {
 			filled_details = filled_details + 1;
 			for (PropertyDetails d : personalRecords.getPropertyDetails()) {
 				if (!StringUtils.equals(d.getValidation().getValidationStatus(), "VALIDATE")) {
@@ -198,44 +202,47 @@ public class DashboardAPIResource {
 				}
 			}
 		}
-		
-	if(personalRecords!=null && personalRecords.getIous()!=null && !personalRecords.getIous().isEmpty()) {
+
+		if (personalRecords != null && personalRecords.getIous() != null && !personalRecords.getIous().isEmpty()) {
 			filled_details = filled_details + 1;
 			for (Ious d : personalRecords.getIous()) {
 				if (!StringUtils.equals(d.getValidation().getValidationStatus(), "VALIDATE")) {
 					countValid++;
 				}
-			}	
+			}
 
 		}
-	
-		if(personalRecords!=null && personalRecords.getAwardsRecognitions()!=null && !personalRecords.getAwardsRecognitions().isEmpty()) {
+
+		if (personalRecords != null && personalRecords.getAwardsRecognitions() != null
+				&& !personalRecords.getAwardsRecognitions().isEmpty()) {
 			filled_details = filled_details + 1;
 			for (AwardsRecognitions d : personalRecords.getAwardsRecognitions()) {
 				if (!StringUtils.equals(d.getValidation().getValidationStatus(), "VALIDATE")) {
 					countValid++;
 				}
-			}	
+			}
 		}
-		
-		if(personalRecords!=null && personalRecords.getInsuranceDetails()!=null && !personalRecords.getInsuranceDetails().isEmpty()) {
+
+		if (personalRecords != null && personalRecords.getInsuranceDetails() != null
+				&& !personalRecords.getInsuranceDetails().isEmpty()) {
 			filled_details = filled_details + 1;
 			for (InsuranceDetails_ d : personalRecords.getInsuranceDetails()) {
 				if (!StringUtils.equals(d.getValidation().getValidationStatus(), "VALIDATE")) {
 					countValid++;
 				}
-			}	
+			}
 		}
-		
-		if(personalRecords!=null && personalRecords.getMiscellaneousAssetDetails()!=null && !personalRecords.getMiscellaneousAssetDetails().isEmpty()) {
+
+		if (personalRecords != null && personalRecords.getMiscellaneousAssetDetails() != null
+				&& !personalRecords.getMiscellaneousAssetDetails().isEmpty()) {
 			filled_details = filled_details + 1;
 			for (MiscellaneousAssetDetails d : personalRecords.getMiscellaneousAssetDetails()) {
 				if (!StringUtils.equals(d.getValidation().getValidationStatus(), "VALIDATE")) {
 					countValid++;
 				}
-			}	
+			}
 		}
-		
+
 		int count = personalRecords.getDocuments().size() + personalRecords.getTaxDetails().size()
 				+ personalRecords.getCreditReport().size() + personalRecords.getBankDetails().size()
 				+ personalRecords.getPropertyDetails().size() + personalRecords.getIous().size()
@@ -250,8 +257,7 @@ public class DashboardAPIResource {
 		jsonInString = mapper.writeValueAsString(data1);
 		ProfileDTO profileDTO = mapper.readValue(jsonInString, ProfileDTO.class);
 
-		
-		if(profileDTO!=null && profileDTO.getEducation()!=null && !profileDTO.getEducation().isEmpty()) {
+		if (profileDTO != null && profileDTO.getEducation() != null && !profileDTO.getEducation().isEmpty()) {
 			filled_details = filled_details + 1;
 			for (Education d : profileDTO.getEducation()) {
 				if (!StringUtils.equals(d.getValidation().getValidationStatus(), "VALIDATE")) {
@@ -259,17 +265,17 @@ public class DashboardAPIResource {
 				}
 			}
 		}
-		
-		if(profileDTO!=null && profileDTO.getCertification()!=null && !profileDTO.getCertification().isEmpty()) {
+
+		if (profileDTO != null && profileDTO.getCertification() != null && !profileDTO.getCertification().isEmpty()) {
 			filled_details = filled_details + 1;
 			for (Certification d : profileDTO.getCertification()) {
 				if (!StringUtils.equals(d.getValidation().getValidationStatus(), "VALIDATE")) {
 					countValid++;
 				}
-			}	
+			}
 		}
-		
-		if(profileDTO!=null && profileDTO.getSkills()!=null && !profileDTO.getSkills().isEmpty()) {
+
+		if (profileDTO != null && profileDTO.getSkills() != null && !profileDTO.getSkills().isEmpty()) {
 			filled_details = filled_details + 1;
 			for (Skills d : profileDTO.getSkills()) {
 				if (!StringUtils.equals(d.getValidation().getValidationStatus(), "VALIDATE")) {
@@ -277,8 +283,8 @@ public class DashboardAPIResource {
 				}
 			}
 		}
-		
-		if(profileDTO!=null && profileDTO.getExperience()!=null && !profileDTO.getExperience().isEmpty()) {
+
+		if (profileDTO != null && profileDTO.getExperience() != null && !profileDTO.getExperience().isEmpty()) {
 			filled_details = filled_details + 1;
 			for (Experience d : profileDTO.getExperience()) {
 				if (!StringUtils.equals(d.getValidation().getValidationStatus(), "VALIDATE")) {
@@ -286,8 +292,8 @@ public class DashboardAPIResource {
 				}
 			}
 		}
-		
-		if(profileDTO!=null && profileDTO.getProject()!=null && !profileDTO.getProject().isEmpty()) {
+
+		if (profileDTO != null && profileDTO.getProject() != null && !profileDTO.getProject().isEmpty()) {
 			filled_details = filled_details + 1;
 			for (Project d : profileDTO.getProject()) {
 				if (!StringUtils.equals(d.getValidation().getValidationStatus(), "VALIDATE")) {
@@ -346,22 +352,19 @@ public class DashboardAPIResource {
 		dashboardStats.setTotalRecords(count);
 		dashboardStats.setValidRecords(countValid);
 		dashboardStats.setTotalDocuments(getList(user.getUserId()));
-		final_percentage = (filled_details*100)/calculatePercentageNumber;
+		final_percentage = (filled_details * 100) / calculatePercentageNumber;
 		dashboardStats.setPercentage(final_percentage);
-		
-		
+
 		return new ResponseEntity<DashboardStats>(dashboardStats, HttpStatus.ACCEPTED);
 	}
-	
-	
 
 	@GetMapping("/getAlerts")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<List<Alert>> getAlerts(Principal login ) throws IOException {
+	public ResponseEntity<List<Alert>> getAlerts(Principal login) throws IOException {
 		User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
 		RestTemplate rt = new RestTemplate();
-		String uri = new String(Constants.Url + "/queries/selectHealthByHealthId?healthId=10022764702391465219");
+		String uri = new String(Constants.Url + "/queries/selectHealthByHealthId?healthId=" + user.getHealthId());
 
 		List<Health> data = rt.getForObject(uri, List.class);
 
@@ -387,7 +390,7 @@ public class DashboardAPIResource {
 					a.setHealthReportTypeName(h.getHealthReportTypeName());
 					alert.add(a);
 				}
-				
+
 			}
 		}
 

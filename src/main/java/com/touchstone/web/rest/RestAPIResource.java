@@ -177,11 +177,11 @@ public class RestAPIResource {
 				try {
 					int i = 0;
 
-					String sl_no = RandomUtil.generateActivationKey();
 					br = new BufferedReader(new FileReader(tmpDir + "/" + user.getProfileId() + "/Certifications.csv"));
 					while ((line = br.readLine()) != null) {
 
 						if (i > 0) {
+							String sl_no = RandomUtil.generateActivationKey();
 							String[] data = line.split(cvsSplitBy);
 							Certificate certificate = new Certificate();
 							certificate.set$class("org.touchstone.basic.addCertification");

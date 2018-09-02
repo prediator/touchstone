@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
@@ -38,6 +39,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.touchstone.config.Constants;
 import com.touchstone.domain.User;
+import com.touchstone.domain.UserType;
 import com.touchstone.repository.AwardsRepository;
 import com.touchstone.repository.BankRepository;
 import com.touchstone.repository.CreditRepository;
@@ -54,6 +56,7 @@ import com.touchstone.service.UserService;
 import com.touchstone.service.dto.AddAwardsRecognitions;
 import com.touchstone.service.dto.AddBankDetails;
 import com.touchstone.service.dto.AddCreditReport;
+import com.touchstone.service.dto.AddHealthCare;
 import com.touchstone.service.dto.AddInsuranceDetails;
 import com.touchstone.service.dto.AddIous;
 import com.touchstone.service.dto.AddMiscellaneousAssetDetails;
@@ -64,14 +67,24 @@ import com.touchstone.service.dto.BankDetails;
 import com.touchstone.service.dto.Certificate;
 import com.touchstone.service.dto.CertificateValidation;
 import com.touchstone.service.dto.Certification;
+import com.touchstone.service.dto.Consumer;
+import com.touchstone.service.dto.ConsumerDTO;
 import com.touchstone.service.dto.CreditReport;
 import com.touchstone.service.dto.Education;
 import com.touchstone.service.dto.EducationDTO;
 import com.touchstone.service.dto.Experience;
 import com.touchstone.service.dto.ExperienceDTO;
+import com.touchstone.service.dto.Health;
+import com.touchstone.service.dto.HealthCare;
+import com.touchstone.service.dto.HealthCareReport;
+import com.touchstone.service.dto.HealthCareReport_;
+import com.touchstone.service.dto.InsuranceClaim;
+import com.touchstone.service.dto.InsuranceClaim_;
 import com.touchstone.service.dto.InsuranceDetails_;
 import com.touchstone.service.dto.MedicalValidation;
 import com.touchstone.service.dto.MiscellaneousAssetDetails;
+import com.touchstone.service.dto.Personal;
+import com.touchstone.service.dto.Profile;
 import com.touchstone.service.dto.Project;
 import com.touchstone.service.dto.ProjectDTO;
 import com.touchstone.service.dto.PropertyDetails;
@@ -80,9 +93,14 @@ import com.touchstone.service.dto.Skills;
 import com.touchstone.service.dto.TaxDetails;
 import com.touchstone.service.dto.Validation;
 import com.touchstone.service.dto.ValidationEmail;
+import com.touchstone.service.util.RandomUtil;
+import com.touchstone.web.rest.errors.EmailAlreadyUsedException;
 import com.touchstone.web.rest.util.GenerateOTP;
 
 import io.github.jhipster.config.JHipsterProperties;
+import ma.glasnost.orika.MapperFacade;
+import ma.glasnost.orika.MapperFactory;
+import ma.glasnost.orika.impl.DefaultMapperFactory;
 
 /**
  * REST controller for adding certificate, Education, Experience, Project,
@@ -90,9 +108,9 @@ import io.github.jhipster.config.JHipsterProperties;
  */
 @Controller
 @RequestMapping("/api")
-public class TestResource {
+public class ValidateResource {
 
-	private final Logger log = LoggerFactory.getLogger(TestResource.class);
+	private final Logger log = LoggerFactory.getLogger(ValidateResource.class);
 	private final UserService userService;
 //	private final String tmpDir = "C:\\Users\\ABC\\Desktop\\Touch\\";
 	private final String tmpDir = "/tmp/";
@@ -125,7 +143,7 @@ public class TestResource {
 
 	private final JavaMailSender javaMailSender;
 
-	public TestResource(UserService userService, MailService mailService, TaxRepository taxRepository,
+	public ValidateResource(UserService userService, MailService mailService, TaxRepository taxRepository,
 			CreditRepository creditRepository, BankRepository bankRepository, PropertyRepository propertyRepository,
 			IousRepository iousRepository, AwardsRepository awardsRepository, InsuranceRepository insuranceRepository,
 			MiscellaneousRepository miscellaneousRepository, PersonalRepository personalRepository,
@@ -380,7 +398,7 @@ public class TestResource {
 	@PostMapping("/personalrecordsvalidate")
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
-	public void validateMedical(@RequestBody MedicalValidation medicalValidation, Principal login)
+	public void validateMedicals(@RequestBody MedicalValidation medicalValidation, Principal login)
 			throws JsonProcessingException {
 		User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
 		String pattern = "yyyy-MM-dd HH:mm:ss";
@@ -925,6 +943,336 @@ public class TestResource {
 		String content = templateEngine.process("education", context);
 		String subject = messageSource.getMessage("email.activation.title", null, locale);
 		sendEmail(validEmail.getEmail(), subject, content, false, true);
+
+	}
+
+	/**
+	 * POST /register : register Consumer.
+	 *
+	 * @param consumer the consumer data
+	 * @throws JsonProcessingException
+	 */
+	@PostMapping("/Consumer")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public ResponseEntity<String> registerAccount(@RequestBody Consumer consumer) throws JsonProcessingException {
+
+		String profileId = RandomUtil.generateActivationKey();
+		String medicalId = RandomUtil.generateActivationKey();
+		String personalId = RandomUtil.generateActivationKey();
+
+		User data = new User();
+
+		data.setActivated(false);
+		data.setUserId(RandomUtil.generateActivationKey());
+		data.setEmail(consumer.getEmail().toLowerCase());
+		data.setFirstName(consumer.getFirstName());
+		data.setLastName(consumer.getLastName());
+		data.setPassword(consumer.getPassword());
+		data.setUserType(UserType.CONSUMER.name());
+		data.setLangKey(consumer.getLangKey());
+		data.setProfileId(profileId);
+		data.setHealthId(medicalId);
+		data.setPersonalId(personalId);
+		userRepository.findOneByEmailIgnoreCase(data.getEmail()).ifPresent(u -> {
+			throw new EmailAlreadyUsedException();
+		});
+
+		userService.registerConsumer(data);
+
+		MapperFactory mapperFactory = new DefaultMapperFactory.Builder().build();
+		mapperFactory.classMap(Consumer.class, ConsumerDTO.class);
+		MapperFacade mapper = mapperFactory.getMapperFacade();
+		ConsumerDTO dest = mapper.map(consumer, ConsumerDTO.class);
+
+		dest.setGender(null);
+		dest.setUserId(data.getUserId());
+		dest.set$class("org.touchstone.basic.Consumer");
+		dest.getAddress().set$class("org.touchstone.basic.Address");
+
+		RestTemplate rt = new RestTemplate();
+		rt.getMessageConverters().add(new StringHttpMessageConverter());
+		String uri = new String(Constants.Url + "/Consumer");
+		rt.postForObject(uri, dest, ConsumerDTO.class);
+
+		Profile profile = new Profile();
+		profile.setProfileId(data.getProfileId());
+		profile.setUser("resource:org.touchstone.basic.Consumer#" + data.getUserId());
+		profile.setYearsOfExperience("");
+
+		RestTemplate rt1 = new RestTemplate();
+		rt1.getMessageConverters().add(new StringHttpMessageConverter());
+		String uri1 = new String(Constants.Url + "/Profile");
+		rt1.postForObject(uri1, profile, Profile.class);
+
+		Health health = new Health();
+		health.setHealthId(medicalId);
+		health.setUser("resource:org.touchstone.basic.Consumer#" + dest.getUserId());
+
+		rt = new RestTemplate();
+		rt.getMessageConverters().add(new StringHttpMessageConverter());
+		uri = new String(Constants.Url + "/Health");
+		rt.postForObject(uri, health, Health.class);
+
+		Personal personal = new Personal();
+		personal.setUser("resource:org.touchstone.basic.Consumer#" + personalId);
+		personal.setPersonalId(personalId);
+
+		rt = new RestTemplate();
+		rt.getMessageConverters().add(new StringHttpMessageConverter());
+		uri = new String(Constants.Url + "/PersonalRecords");
+		rt.postForObject(uri, personal, Personal.class);
+		ObjectMapper mappers = new ObjectMapper();
+		String jsonInString = mappers.writeValueAsString(personal);
+		System.out.println(jsonInString);
+
+		Locale locale = Locale.forLanguageTag("en");
+		Context context = new Context(locale);
+		context.setVariable("url", "http://ridgelift.io:8080/api/verifyc/" + generateOtp.storeOTP(data.getUserId())
+				+ "/" + data.getEmail() + "/" + data.getUserId());
+		String content = templateEngine.process("consumer", context);
+		String subject = messageSource.getMessage("email.activation.title", null, locale);
+		sendEmail(data.getEmail(), subject, content, false, true);
+
+//		mailService.sendEmail(
+//				data.getEmail(), "Account Created", "http://ridgelift.io:8080/api/verifyc/"
+//						+ generateOtp.storeOTP(data.getUserId()) + "/" + data.getEmail() + "/" + data.getUserId(),
+//				false, true);
+		return new ResponseEntity(HttpStatus.CREATED);
+
+	}
+
+	@GetMapping("/healthvalidate/{otp}/{slno}/{uname}/{email}/{type}/{desc}/{by}")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public void healthvalidate(HttpServletResponse httpServletResponse, @PathVariable Integer otp,
+			@PathVariable String slno, @PathVariable String uname, @PathVariable String email,
+			@PathVariable String type, @PathVariable String desc, @PathVariable String by) {
+		User user = userService.getUserWithAuthoritiesByLogin(uname).get();
+
+		String pattern = "yyyy-MM-dd HH:mm:ss";
+		SimpleDateFormat simpleDateFormat = new SimpleDateFormat(pattern);
+
+		String date = simpleDateFormat.format(new Date());
+
+		Validation valid = new Validation();
+		valid.set$class("org.touchstone.basic.Validation");
+		valid.setValidationStatus("VALIDATED");
+		valid.setValidationType("MANUAL");
+		valid.setValidationBy(by);
+		valid.setValidationDate(date);
+		valid.setValidationEmail(email);
+		valid.setValidationNote(desc);
+
+		try {
+			if (generateOtp.checkOTP(email, otp) == 1) {
+				if (StringUtils.equals(type, "healthInfo")) {
+					AddHealthCare addHealthCare = new AddHealthCare();
+					addHealthCare.set$class("org.touchstone.basic.validateHealthCare");
+					addHealthCare.setHealth("resource:org.touchstone.basic.Health#" + user.getHealthId());
+
+					HealthCare health = new HealthCare();
+					health.setHealthCareId(slno);
+					health.setReportReference(new ArrayList<>());
+
+					health.setValidation(valid);
+
+					addHealthCare.setHealthCare(health);
+
+					ObjectMapper mappers = new ObjectMapper();
+					String jsonInString = mappers.writeValueAsString(addHealthCare);
+					System.out.println(jsonInString);
+
+					RestTemplate rt = new RestTemplate();
+					rt.getMessageConverters().add(new StringHttpMessageConverter());
+					String uri = new String(Constants.Url + "/validateHealthCare");
+					rt.postForObject(uri, addHealthCare, AddHealthCare.class);
+				} else if (StringUtils.equals(type, "healthReport")) {
+					HealthCareReport_ health = new HealthCareReport_();
+
+					health.setReportReference(new ArrayList<>());
+					health.setHealthCareReportId(slno);
+					HealthCareReport healthCareReport = new HealthCareReport();
+					healthCareReport.set$class("org.touchstone.basic.validateHealthCareReport");
+					healthCareReport.setHealth("resource:org.touchstone.basic.Health#" + user.getHealthId());
+					healthCareReport.setHealthCareReport(health);
+
+					health.setValidation(valid);
+
+					ObjectMapper mappers = new ObjectMapper();
+					String jsonInString = mappers.writeValueAsString(healthCareReport);
+					System.out.println(jsonInString);
+					RestTemplate rt = new RestTemplate();
+					rt.getMessageConverters().add(new StringHttpMessageConverter());
+					String uri = new String(Constants.Url + "/validateHealthCareReport");
+					rt.postForObject(uri, healthCareReport, HealthCareReport.class);
+				} else if (StringUtils.equals(type, "insuranceClaim")) {
+					InsuranceClaim_ ic = new InsuranceClaim_();
+
+					InsuranceClaim insuranceClaim = new InsuranceClaim();
+					insuranceClaim.set$class("org.touchstone.basic.validateInsuranceDetails");
+					insuranceClaim.setHealth("resource:org.touchstone.basic.Health#" + user.getHealthId());
+					ic.setInsuranceClaimId(slno);
+					ic.setClaimreports(new ArrayList<>());
+					ic.setAilment(new ArrayList());
+
+					ic.setValidation(valid);
+
+					insuranceClaim.setInsuranceClaim(ic);
+					ObjectMapper mappers = new ObjectMapper();
+					String jsonInString = mappers.writeValueAsString(insuranceClaim);
+					System.out.println(jsonInString);
+
+					RestTemplate rt = new RestTemplate();
+					rt.getMessageConverters().add(new StringHttpMessageConverter());
+					String uri = new String(Constants.Url + "/validateInsuranceClaim");
+					rt.postForObject(uri, insuranceClaim, InsuranceClaim.class);
+				}
+
+				generateOtp.removeOtp(email);
+
+				Map<String, String> data = new HashMap<>();
+				data.put("status", "success");
+			} else {
+			}
+			httpServletResponse.sendRedirect(Constants.live);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+	}
+
+	@PostMapping("/healthrecordsvalidate")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public void validateMedical(@RequestBody MedicalValidation medicalValidation, Principal login) {
+		User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
+
+		String pattern = "yyyy-MM-dd HH:mm:ss";
+		SimpleDateFormat simpleDateFormat = new SimpleDateFormat(pattern);
+
+		String date = simpleDateFormat.format(new Date());
+		Validation valid = new Validation();
+		valid.set$class("org.touchstone.basic.Validation");
+		valid.setValidationStatus("IN_PROGRESS");
+		valid.setValidationType("MANUAL");
+		valid.setValidationBy(medicalValidation.getValidationBy());
+		valid.setValidationDate(date);
+		valid.setValidationEmail(medicalValidation.getEmail());
+		valid.setValidationNote(medicalValidation.getDescription());
+		try {
+			if (StringUtils.equals(medicalValidation.getType(), "healthInfo")) {
+				AddHealthCare addHealthCare = new AddHealthCare();
+				addHealthCare.set$class("org.touchstone.basic.validateHealthCare");
+				addHealthCare.setHealth("resource:org.touchstone.basic.Health#" + user.getHealthId());
+
+				HealthCare health = new HealthCare();
+				health.setHealthCareId(medicalValidation.getSlno());
+				health.setReportReference(new ArrayList<>());
+
+				health.setValidation(valid);
+
+				addHealthCare.setHealthCare(health);
+
+				ObjectMapper mappers = new ObjectMapper();
+				String jsonInString = mappers.writeValueAsString(addHealthCare);
+				System.out.println(jsonInString);
+
+				RestTemplate rt = new RestTemplate();
+				rt.getMessageConverters().add(new StringHttpMessageConverter());
+				String uri = new String(Constants.Url + "/validateHealthCare");
+				rt.postForObject(uri, addHealthCare, AddHealthCare.class);
+			} else if (StringUtils.equals(medicalValidation.getType(), "healthReport")) {
+				HealthCareReport_ health = new HealthCareReport_();
+				health.setReportReference(new ArrayList<>());
+				health.setHealthCareReportId(medicalValidation.getSlno());
+				HealthCareReport healthCareReport = new HealthCareReport();
+				healthCareReport.set$class("org.touchstone.basic.validateHealthCareReport");
+				healthCareReport.setHealth("resource:org.touchstone.basic.Health#" + user.getHealthId());
+				healthCareReport.setHealthCareReport(health);
+
+				health.setValidation(valid);
+
+				ObjectMapper mappers = new ObjectMapper();
+				String jsonInString = mappers.writeValueAsString(healthCareReport);
+				System.out.println(jsonInString);
+				RestTemplate rt = new RestTemplate();
+				rt.getMessageConverters().add(new StringHttpMessageConverter());
+				String uri = new String(Constants.Url + "/validateHealthCareReport");
+				rt.postForObject(uri, healthCareReport, HealthCareReport.class);
+			} else if (StringUtils.equals(medicalValidation.getType(), "insuranceClaim")) {
+				InsuranceClaim_ ic = new InsuranceClaim_();
+
+				InsuranceClaim insuranceClaim = new InsuranceClaim();
+				insuranceClaim.set$class("org.touchstone.basic.validateInsuranceClaim");
+				insuranceClaim.setHealth("resource:org.touchstone.basic.Health#" + user.getHealthId());
+				ic.setInsuranceClaimId(medicalValidation.getSlno());
+				ic.setClaimreports(new ArrayList<>());
+				ic.setAilment(new ArrayList());
+
+				ic.setValidation(valid);
+
+				insuranceClaim.setInsuranceClaim(ic);
+				ObjectMapper mappers = new ObjectMapper();
+				String jsonInString = mappers.writeValueAsString(insuranceClaim);
+				System.out.println(jsonInString);
+
+				RestTemplate rt = new RestTemplate();
+				rt.getMessageConverters().add(new StringHttpMessageConverter());
+				String uri = new String(Constants.Url + "/validateInsuranceClaim");
+				rt.postForObject(uri, insuranceClaim, InsuranceClaim.class);
+			}
+
+			// {otp}/{slno}/{uname}/{email}/{type}
+
+			System.out.println(medicalValidation);
+			Locale locale = Locale.forLanguageTag("en");
+			Context context = new Context(locale);
+
+			context.setVariable("doc", medicalValidation.getPath());
+			context.setVariable("consumer", user.getFirstName() + " " + user.getLastName());
+			context.setVariable("desc", medicalValidation.getDescription());
+			context.setVariable("name", medicalValidation.getValidationBy());
+			context.setVariable("type", medicalValidation.getType().substring(0, 1).toUpperCase()
+					+ medicalValidation.getType().substring(1));
+			context.setVariable("url",
+					"http://ridgelift.io:8080/api/healthvalidate/" + generateOtp.storeOTP(medicalValidation.getEmail())
+							+ "/" + medicalValidation.getSlno() + "/" + user.getLogin() + "/"
+							+ medicalValidation.getEmail() + "/" + medicalValidation.getType() + "/"
+							+ medicalValidation.getDescription() + "/" + medicalValidation.getValidationBy());
+			String content = templateEngine.process("education", context);
+			String subject = messageSource.getMessage("email.activation.title", null, locale);
+			sendEmail(medicalValidation.getEmail(), subject, content, false, true);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+	}
+
+	@GetMapping("/verifyc/{code}/{id:.+}/{uid}")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public void validedEmail(HttpServletResponse httpServletResponse, @PathVariable int code, @PathVariable String id,
+			@PathVariable String uid) throws IOException {
+
+		if (generateOtp.checkOTP(uid, code) == 1) {
+			Validation valid = new Validation();
+			valid.set$class("org.touchstone.basic.ValidateEmail");
+			valid.setIsEmailValidated(true);
+			valid.setConsumer("resource:org.touchstone.basic.Consumer#" + uid);
+			RestTemplate rt = new RestTemplate();
+			rt.getMessageConverters().add(new StringHttpMessageConverter());
+			String uri = new String(Constants.Url + "/ValidateEmail");
+			rt.postForObject(uri, valid, Validation.class);
+
+			User user = userRepository.findOne(uid);
+			user.setActivated(true);
+			userRepository.save(user);
+			generateOtp.removeOtp(id);
+			httpServletResponse.sendRedirect(Constants.liveReg);
+		}
 
 	}
 
