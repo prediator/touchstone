@@ -77,11 +77,14 @@ import com.touchstone.service.dto.AddPropertyDetails;
 import com.touchstone.service.dto.AddTaxDetails;
 import com.touchstone.service.dto.AwardsRecognitions;
 import com.touchstone.service.dto.BankDetails;
+import com.touchstone.service.dto.CreditDTO;
 import com.touchstone.service.dto.CreditReport;
 import com.touchstone.service.dto.Documents;
 import com.touchstone.service.dto.InsuranceDetails_;
 import com.touchstone.service.dto.MiscellaneousAssetDetails;
 import com.touchstone.service.dto.PersonalRecords;
+import com.touchstone.service.dto.PoliceVerification;
+import com.touchstone.service.dto.PoliceVerificationDTO;
 import com.touchstone.service.dto.PropertyDetails;
 import com.touchstone.service.dto.TaxDetails;
 import com.touchstone.service.dto.Validation;
@@ -136,7 +139,8 @@ public class PersonalAPIResource {
 			IousRepository iousRepository, AwardsRepository awardsRepository, InsuranceRepository insuranceRepository,
 			MiscellaneousRepository miscellaneousRepository, PersonalRepository personalRepository,
 			PersonalService personalService, SpringTemplateEngine templateEngine, MessageSource messageSource,
-			JHipsterProperties jHipsterProperties, JavaMailSender javaMailSender, UserRepository userRepository,CacheManager cacheManager) {
+			JHipsterProperties jHipsterProperties, JavaMailSender javaMailSender, UserRepository userRepository,
+			CacheManager cacheManager) {
 		this.userService = userService;
 		this.mailService = mailService;
 		this.taxRepository = taxRepository;
@@ -163,7 +167,7 @@ public class PersonalAPIResource {
 	public void UpdateName(@RequestParam(name = "file", required = false) MultipartFile file, Principal login)
 			throws IOException {
 		User user = userRepository.findOneByLogin(login.getName()).get();
-		log.info("In add user:  "+user.getImage());
+		log.info("In add user:  " + user.getImage());
 		File dir = new File(tmpDir);
 
 		dir.mkdirs();
@@ -182,15 +186,15 @@ public class PersonalAPIResource {
 
 			userRepository.save(usr);
 			cacheManager.getCache(UserRepository.USERS_BY_LOGIN_CACHE).evict(user.getLogin());
-            cacheManager.getCache(UserRepository.USERS_BY_EMAIL_CACHE).evict(user.getEmail());
+			cacheManager.getCache(UserRepository.USERS_BY_EMAIL_CACHE).evict(user.getEmail());
 		}
 	}
-	
+
 	@GetMapping("/getimage")
 	@Timed
 	public ResponseEntity<User> getProfilePic(Principal login) throws IOException {
 		User user = userRepository.findOneByLogin(login.getName()).get();
-		log.info("user:  "+user.getImage());
+		log.info("user:  " + user.getImage());
 		return new ResponseEntity<User>(user, HttpStatus.ACCEPTED);
 	}
 
@@ -355,6 +359,177 @@ public class PersonalAPIResource {
 		User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
 		List<Tax> data = taxRepository.findAllByUserId(user.getUserId());
 		return new ResponseEntity<List<Tax>>(data, HttpStatus.CREATED);
+	}
+
+	@PostMapping("/creditreport")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public ResponseEntity<String> creditreport(@RequestParam(name = "file", required = false) MultipartFile file,
+			@RequestParam("creditreport") String certi, Principal login) throws JsonProcessingException {
+		try {
+			ObjectMapper jsonParserClient = new ObjectMapper();
+			String id = RandomUtil.generateActivationKey();
+			Credit cre = jsonParserClient.readValue(certi, Credit.class);
+			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
+
+			String[] links = new String[1];
+
+			if (file != null) {
+				links[0] = "https://s3.ap-south-1.amazonaws.com/touchstonebackend/" + user.getUserId()
+						+ "/creditreport/" + file.getOriginalFilename();
+			} else {
+				links[0] = "";
+			}
+
+			CreditDTO creditDTO = new CreditDTO();
+			creditDTO.setPersonalRecords("resource:org.touchstone.basic.PersonalRecords#" + user.getPersonalId());
+			creditDTO.set$class("org.touchstone.basic.addCredit");
+
+			com.touchstone.service.dto.Credit credit = new com.touchstone.service.dto.Credit();
+			credit.setDocumentReference(links[0]);
+			credit.setCreditId(id);
+			credit.setDateOfReport(cre.getReportdate());
+
+			Validation valid = new Validation();
+			valid.set$class("org.touchstone.basic.Validation");
+			valid.setValidationStatus("VALIDATE");
+			valid.setValidationType("MANUAL");
+			valid.setValidationBy("");
+			valid.setValidationDate("");
+			valid.setValidationEmail("");
+			valid.setValidationNote("");
+			credit.setValidation(valid);
+
+			creditDTO.setCredit(credit);
+
+			ObjectMapper mappers = new ObjectMapper();
+			String jsonInString = mappers.writeValueAsString(creditDTO);
+			System.out.println(jsonInString);
+
+			RestTemplate rt = new RestTemplate();
+			rt.getMessageConverters().add(new StringHttpMessageConverter());
+			String uri = new String(Constants.Url + "/addCredit");
+			rt.postForObject(uri, creditDTO, CreditDTO.class);
+
+			File dir = new File(tmpDir);
+
+			dir.mkdirs();
+			if (dir.isDirectory() && file != null) {
+				File serverFile = new File(dir, file.getOriginalFilename());
+				serverFile.setReadable(true, false);
+				BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(serverFile));
+				stream.write(file.getBytes());
+				stream.close();
+				uploadFileToS3(file, user.getUserId(), "creditreport");
+				serverFile.delete();
+			}
+
+			return new ResponseEntity(HttpStatus.CREATED);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return new ResponseEntity(HttpStatus.BAD_REQUEST);
+		}
+	}
+
+	@GetMapping("/creditreport")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public ResponseEntity<String> creditreport(Principal login) {
+
+		User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
+		RestTemplate rt = new RestTemplate();
+		rt.getMessageConverters().add(new StringHttpMessageConverter());
+		String profileId = user.getProfileId();
+		String uri = new String(Constants.Url + "/addCredit/" + profileId);
+		String data = rt.getForObject(uri, String.class);
+
+		return new ResponseEntity<String>(data, HttpStatus.CREATED);
+	}
+
+	@PostMapping("/addPoliceVerification")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public ResponseEntity<String> addPoliceVerification(
+			@RequestParam(name = "file", required = false) MultipartFile file,
+			@RequestParam("policeverification") String certi, Principal login) throws JsonProcessingException {
+		try {
+			ObjectMapper jsonParserClient = new ObjectMapper();
+			String id = RandomUtil.generateActivationKey();
+			PoliceVerification cre = jsonParserClient.readValue(certi, PoliceVerification.class);
+			User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
+
+			String[] links = new String[1];
+
+			if (file != null) {
+				links[0] = "https://s3.ap-south-1.amazonaws.com/touchstonebackend/" + user.getUserId()
+						+ "/policeverification/" + file.getOriginalFilename();
+			} else {
+				links[0] = "";
+			}
+
+			PoliceVerificationDTO creditDTO = new PoliceVerificationDTO();
+			creditDTO.setPersonalRecords("resource:org.touchstone.basic.PersonalRecords#" + user.getPersonalId());
+			creditDTO.set$class("org.touchstone.basic.addPoliceVerification");
+
+			PoliceVerification police = new PoliceVerification();
+			police.setDocumentReference(links[0]);
+			police.setPoliceVerificationId(id);
+			police.setDateOfReport(cre.getDateOfReport());
+
+			Validation valid = new Validation();
+			valid.set$class("org.touchstone.basic.Validation");
+			valid.setValidationStatus("VALIDATE");
+			valid.setValidationType("MANUAL");
+			valid.setValidationBy("");
+			valid.setValidationDate("");
+			valid.setValidationEmail("");
+			valid.setValidationNote("");
+			police.setValidation(valid);
+
+			creditDTO.setPoliceVerification(police);
+
+			ObjectMapper mappers = new ObjectMapper();
+			String jsonInString = mappers.writeValueAsString(creditDTO);
+			System.out.println(jsonInString);
+
+			RestTemplate rt = new RestTemplate();
+			rt.getMessageConverters().add(new StringHttpMessageConverter());
+			String uri = new String(Constants.Url + "/addPoliceVerification");
+			rt.postForObject(uri, creditDTO, CreditDTO.class);
+
+			File dir = new File(tmpDir);
+
+			dir.mkdirs();
+			if (dir.isDirectory() && file != null) {
+				File serverFile = new File(dir, file.getOriginalFilename());
+				serverFile.setReadable(true, false);
+				BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(serverFile));
+				stream.write(file.getBytes());
+				stream.close();
+				uploadFileToS3(file, user.getUserId(), "policeverification");
+				serverFile.delete();
+			}
+
+			return new ResponseEntity(HttpStatus.CREATED);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return new ResponseEntity(HttpStatus.BAD_REQUEST);
+		}
+	}
+	
+	@GetMapping("/addPoliceVerification")
+	@Timed
+	@ResponseStatus(HttpStatus.CREATED)
+	public ResponseEntity<String> addPoliceVerification(Principal login) {
+
+		User user = userService.getUserWithAuthoritiesByLogin(login.getName()).get();
+		RestTemplate rt = new RestTemplate();
+		rt.getMessageConverters().add(new StringHttpMessageConverter());
+		String profileId = user.getProfileId();
+		String uri = new String(Constants.Url + "/addPoliceVerification/" + profileId);
+		String data = rt.getForObject(uri, String.class);
+
+		return new ResponseEntity<String>(data, HttpStatus.CREATED);
 	}
 
 	@PostMapping("/credit")
