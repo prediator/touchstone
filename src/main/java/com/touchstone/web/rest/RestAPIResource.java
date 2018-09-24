@@ -1,5 +1,6 @@
 package com.touchstone.web.rest;
 
+import java.awt.List;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
@@ -8,22 +9,17 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.Principal;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
+import java.util.ArrayList;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import javax.mail.internet.MimeMessage;
 
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.MessageSource;
@@ -36,14 +32,12 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
-import org.thymeleaf.context.Context;
 import org.thymeleaf.spring4.SpringTemplateEngine;
 
 import com.amazonaws.AmazonClientException;
@@ -72,7 +66,6 @@ import com.touchstone.service.dto.Project;
 import com.touchstone.service.dto.ProjectDTO;
 import com.touchstone.service.dto.SkillDTO;
 import com.touchstone.service.dto.Skills;
-import com.touchstone.service.dto.ValidationEmail;
 import com.touchstone.service.util.RandomUtil;
 import com.touchstone.web.rest.util.GenerateOTP;
 
@@ -173,6 +166,7 @@ public class RestAPIResource {
 				BufferedReader br = null;
 				String line = "";
 				String cvsSplitBy = ",";
+				String sl_no = RandomUtil.generateActivationKey();
 
 				try {
 					int i = 0;
@@ -181,7 +175,6 @@ public class RestAPIResource {
 					while ((line = br.readLine()) != null) {
 
 						if (i > 0) {
-							String sl_no = RandomUtil.generateActivationKey();
 							String[] data = line.split(cvsSplitBy);
 							Certificate certificate = new Certificate();
 							certificate.set$class("org.touchstone.basic.addCertification");
@@ -200,15 +193,127 @@ public class RestAPIResource {
 							// certificate.getCertification().setSupportingDocumentLinks(links);
 							ObjectMapper mappers = new ObjectMapper();
 							String jsonInString = mappers.writeValueAsString(certificate);
-							System.out.println(jsonInString);
 
 							RestTemplate rt = new RestTemplate();
 							rt.getMessageConverters().add(new StringHttpMessageConverter());
 							String uri = new String(Constants.Url + "/addCertification");
 							rt.postForObject(uri, certificate, Certificate.class);
 
-							System.out.println(data[0]);
-							System.out.println(data[2]);
+						}
+						i++;
+
+					}
+
+					i = 0;
+
+					br = new BufferedReader(new FileReader(tmpDir + "/" + user.getProfileId() + "/Education.csv"));
+					while ((line = br.readLine()) != null) {
+
+						if (i > 0) {
+							String[] data = line.split(cvsSplitBy);
+
+							EducationDTO edu = new EducationDTO();
+							Education e = new Education();
+							edu.set$class("org.touchstone.basic.addEducation");
+							edu.setEducation(new Education());
+							e.setValidation(new CertificateValidation());
+							e.set$class("org.touchstone.basic.Education");
+							e.getValidation().set$class("org.touchstone.basic.Validation");
+							edu.setProfile("resource:org.touchstone.basic.Profile#" + user.getProfileId());
+							e.getValidation().setValidationStatus("VALIDATE");
+							e.getValidation().setValidationType("MANUAL");
+
+							e.setInstitute(data[0]);
+							e.setYearOfPassing(data[2]);
+							e.setEducation_slno(sl_no);
+							e.setCourse(data[4]);
+							edu.setEducation(e);
+
+							RestTemplate rt = new RestTemplate();
+							rt.getMessageConverters().add(new StringHttpMessageConverter());
+							String uri = new String(Constants.Url + "/addEducation");
+							rt.postForObject(uri, edu, EducationDTO.class);
+
+						}
+						i++;
+
+					}
+
+					i = 0;
+
+					br = new BufferedReader(new FileReader(tmpDir + "/" + user.getProfileId() + "/Projects.csv"));
+					while ((line = br.readLine()) != null) {
+
+						if (i > 0) {
+							String[] data = line.split(cvsSplitBy);
+
+							ProjectDTO project = new ProjectDTO();
+							Project pj = new Project();
+							pj.setValidation(new CertificateValidation());
+							project.setProject(new Project());
+							pj.setProject_slno(sl_no);
+
+							project.set$class("org.touchstone.basic.addProject");
+							pj.set$class("org.touchstone.basic.Project");
+							pj.getValidation().set$class("org.touchstone.basic.Validation");
+							project.setProfile("resource:org.touchstone.basic.Profile#" + user.getProfileId());
+							pj.getValidation().setValidationStatus("VALIDATE");
+							pj.getValidation().setValidationType("MANUAL");
+
+							pj.setProject_slno(sl_no);
+							pj.setJobRole(data[1]);
+							pj.setOrganizationName(data[2]);
+							pj.setFrom(data[3]);
+							pj.setTo(data[4]);
+							pj.setSkills(new String[0]);
+							pj.setSupportingDocumentLinks(new String[0]);
+							project.setProject(pj);
+
+							ObjectMapper mappers = new ObjectMapper();
+							String jsonInString = mappers.writeValueAsString(project);
+
+							RestTemplate rt = new RestTemplate();
+							rt.getMessageConverters().add(new StringHttpMessageConverter());
+							String uri = new String(Constants.Url + "/addProject");
+							rt.postForObject(uri, project, EducationDTO.class);
+
+						}
+						i++;
+
+					}
+
+					i = 0;
+
+					br = new BufferedReader(new FileReader(tmpDir + "/" + user.getProfileId() + "/Skills.csv"));
+					while ((line = br.readLine()) != null) {
+
+						if (i > 0) {
+							String[] data = line.split(cvsSplitBy);
+
+							SkillDTO skill = new SkillDTO();
+							Skills sk = new Skills();
+							sk.setValidation(new CertificateValidation());
+							sk.setSkill_slno(sl_no);
+
+							skill.set$class("org.touchstone.basic.addSkills");
+
+							sk.set$class("org.touchstone.basic.Skills");
+							sk.getValidation().set$class("org.touchstone.basic.Validation");
+							skill.setProfile("resource:org.touchstone.basic.Profile#" + user.getProfileId());
+							sk.getValidation().setValidationStatus("VALIDATE");
+							sk.getValidation().setValidationType("MANUAL");
+							sk.setExpertiseLevel("BEGINNER");
+							sk.setSkillName(data[0]);
+
+							skill.setSkills(sk);
+							ObjectMapper mappers = new ObjectMapper();
+							String jsonInString = mappers.writeValueAsString(skill);
+
+							RestTemplate rt = new RestTemplate();
+							rt.getMessageConverters().add(new StringHttpMessageConverter());
+							String uri = new String(Constants.Url + "/addSkills");
+							rt.postForObject(uri, skill, SkillDTO.class);
+
 						}
 						i++;
 
@@ -347,25 +452,6 @@ public class RestAPIResource {
 			} else {
 				edu.getEducation().setSupportingDocumentLinks(new String[0]);
 			}
-
-//			String[] links = new String[1];
-//			links[0] = "https://s3.ap-south-1.amazonaws.com/touchstonebackend/" + user.getUserId() + "/education/"
-//					+ files[0].getOriginalFilename();
-//			edu.getEducation().setSupportingDocumentLinks(links);
-//
-//			String fileName = files[0].getOriginalFilename();
-//			File dir = new File(tmpDir);
-//
-//			dir.mkdirs();
-//			if (dir.isDirectory()) {
-//				File serverFile = new File(dir, fileName);
-//				serverFile.setReadable(true, false);
-//				BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(serverFile));
-//				stream.write(file[0].getBytes());
-//				stream.close();
-//				uploadFileToS3(file[0], user.getUserId(), "education");
-//				serverFile.delete();
-//			}
 
 			edu.set$class("org.touchstone.basic.addEducation");
 			edu.getEducation().set$class("org.touchstone.basic.Education");

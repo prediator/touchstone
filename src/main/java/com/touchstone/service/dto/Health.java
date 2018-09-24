@@ -12,6 +12,15 @@ public class Health {
 	private List<HealthCareReport_> healthCareReport = null;
 	private List<InsuranceClaim_> insuranceClaim = null;
 	private List<Ailment_> ailment = null;
+	private List<Allergie_> allergie = null;
+
+	public List<Allergie_> getAllergie() {
+		return allergie;
+	}
+
+	public void setAllergie(List<Allergie_> allergie) {
+		this.allergie = allergie;
+	}
 
 	public String get$class() {
 		return $class;

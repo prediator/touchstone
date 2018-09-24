@@ -16,6 +16,8 @@ public class PersonalRecords {
 	private List<AwardsRecognitions> awardsRecognitions = null;
 	private List<InsuranceDetails_> insuranceDetails = null;
 	private List<MiscellaneousAssetDetails> miscellaneousAssetDetails = null;
+	private List<AddCreditReport> credits = null;
+	private List<PoliceVerification> policeVerifications = null;
 
 	@Override
 	public String toString() {
@@ -23,7 +25,24 @@ public class PersonalRecords {
 				+ documents + ", taxDetails=" + taxDetails + ", creditReport=" + creditReport + ", bankDetails="
 				+ bankDetails + ", propertyDetails=" + propertyDetails + ", ious=" + ious + ", awardsRecognitions="
 				+ awardsRecognitions + ", insuranceDetails=" + insuranceDetails + ", miscellaneousAssetDetails="
-				+ miscellaneousAssetDetails + "]";
+				+ miscellaneousAssetDetails + ", credits=" + credits + ", policeVerifications=" + policeVerifications
+				+ "]";
+	}
+
+	public List<PoliceVerification> getPoliceVerifications() {
+		return policeVerifications;
+	}
+
+	public void setPoliceVerifications(List<PoliceVerification> policeVerifications) {
+		this.policeVerifications = policeVerifications;
+	}
+
+	public List<AddCreditReport> getCredits() {
+		return credits;
+	}
+
+	public void setCredits(List<AddCreditReport> credits) {
+		this.credits = credits;
 	}
 
 	public String get$class() {

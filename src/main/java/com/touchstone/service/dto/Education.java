@@ -22,6 +22,8 @@ public class Education {
 	private String[] supportingDocumentLinks;
 
 	private CertificateValidation validation;
+	
+	
 
 	public String get$class() {
 		return $class;
