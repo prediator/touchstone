@@ -52,8 +52,12 @@ public class UserDTO {
 
 	private String state;
 
-	private UserType userType;
+	private String profileId;
 
+	private String healthId;
+	private String personalId;
+	private UserType userType;
+	private String image;
 	private String zipcode;
 	private boolean activated = false;
 
@@ -66,10 +70,14 @@ public class UserDTO {
 	public UserDTO(User user) {
 		this.userId = user.getLogin();
 		this.firstName = user.getFirstName();
+		this.image = user.getImage();
 		this.lastName = user.getLastName();
 		this.emailId = user.getEmail();
 		this.activated = user.getActivated();
 		this.langKey = user.getLangKey();
+		this.profileId = user.getProfileId();
+		this.healthId = user.getHealthId();
+		this.personalId = user.getPersonalId();
 		if (user.getUserType().equalsIgnoreCase("consumer")) {
 			this.userType = userType.CONSUMER;
 		} else {
@@ -77,6 +85,38 @@ public class UserDTO {
 		}
 
 		this.authorities = user.getAuthorities().stream().map(Authority::getName).collect(Collectors.toSet());
+	}
+
+	public String getImage() {
+		return image;
+	}
+
+	public void setImage(String image) {
+		this.image = image;
+	}
+
+	public String getPersonalId() {
+		return personalId;
+	}
+
+	public void setPersonalId(String personalId) {
+		this.personalId = personalId;
+	}
+
+	public String getHealthId() {
+		return healthId;
+	}
+
+	public void setHealthId(String healthId) {
+		this.healthId = healthId;
+	}
+
+	public String getProfileId() {
+		return profileId;
+	}
+
+	public void setProfileId(String profileId) {
+		this.profileId = profileId;
 	}
 
 	public String getAddress1() {

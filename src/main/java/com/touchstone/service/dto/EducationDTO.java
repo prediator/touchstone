@@ -5,13 +5,13 @@ package com.touchstone.service.dto;
  */
 public class EducationDTO {
 
-	private String $class;
+	private String $class="";
 	
 	private Education education;
 
-	private String id;
+	//private String id;
 
-	private String profile;
+	private String profile="";
 
 	public String get$class() {
 		return $class;
@@ -29,13 +29,13 @@ public class EducationDTO {
 		this.education = education;
 	}
 
-	public String getId() {
-		return id;
-	}
-
-	public void setId(String id) {
-		this.id = id;
-	}
+//	public String getId() {
+//		return id;
+//	}
+//
+//	public void setId(String id) {
+//		this.id = id;
+//	}
 
 	public String getProfile() {
 		return profile;
@@ -47,7 +47,6 @@ public class EducationDTO {
 
 	@Override
 	public String toString() {
-		return "Certificate [$class=" + $class + ", education=" + education + ", id=" + id + ", profile="
-				+ profile + "]";
+		return "EducationDTO [$class=" + $class + ", education=" + education + ", profile=" + profile + "]";
 	}
 }

@@ -171,6 +171,8 @@ dependencies {
     compile "io.jsonwebtoken:jjwt"
     compile "com.github.mongobee:mongobee"
 	compile group: 'com.googlecode.json-simple', name: 'json-simple', version: '1.1'
+	compile group: 'com.dropbox.core', name: 'dropbox-core-sdk', version: '3.0.8'
+	compile group: 'com.itextpdf', name: 'itextpdf', version: '5.0.6'
     
     compile "com.google.guava:guava"
     compile group: 'ma.glasnost.orika', name: 'orika-core', version: '1.5.2'
@@ -185,14 +187,11 @@ dependencies {
     compile "io.springfox:springfox-bean-validators"
     compile "org.mapstruct:mapstruct-jdk8:${mapstruct_version}"
     testCompile "com.jayway.jsonpath:json-path"
-    testCompile ("org.springframework.boot:spring-boot-starter-test") {
+    compile ("org.springframework.boot:spring-boot-starter-test") {
         exclude group: 'com.vaadin.external.google', module: 'android-json'
     }
-    testCompile "org.springframework.security:spring-security-test"
-    testCompile "org.springframework.boot:spring-boot-test"
-    testCompile "org.assertj:assertj-core"
+     testCompile "org.assertj:assertj-core"
     testCompile "junit:junit"
-    testCompile "org.mockito:mockito-core"
     testCompile "de.flapdoodle.embed:de.flapdoodle.embed.mongo"
     testCompile "org.hamcrest:hamcrest-library"
     testCompile "com.h2database:h2"

@@ -9,19 +9,21 @@ public class Education {
 
 	private String $class;
 
-	private String education_slno;
+	private String education_slno = "";
 
-	private String course;
+	private String course = "";
 
-	private String institute;
+	private String institute = "";
 
-	private String specialization;
-	private String yearOfPassing;
-	private String score;
-	private String courseType;
+	private String specialization = "";
+	private String yearOfPassing = "";
+	private String score = "";
+	private String courseType = "FULL_TIME";
 	private String[] supportingDocumentLinks;
 
 	private CertificateValidation validation;
+	
+	
 
 	public String get$class() {
 		return $class;
@@ -110,5 +112,5 @@ public class Education {
 				+ ", score=" + score + ", courseType=" + courseType + ", supportingDocumentLinks="
 				+ Arrays.toString(supportingDocumentLinks) + ", validation=" + validation + "]";
 	}
-	
+
 }

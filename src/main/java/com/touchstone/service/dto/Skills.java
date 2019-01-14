@@ -9,13 +9,13 @@ public class Skills {
 
 	private String $class;
 
-	private String skill_slno;
+	private String skill_slno = "";
 
-	private String skillName;
+	private String skillName = "";
 
-	private String yearOfExp;
+	private String yearOfExp = "";
 
-	private String expertiseLevel;
+	private String expertiseLevel = "";
 	private String[] supportingDocumentLinks;
 
 	private CertificateValidation validation;
@@ -27,7 +27,7 @@ public class Skills {
 	public void set$class(String $class) {
 		this.$class = $class;
 	}
-	
+
 	public String getSkill_slno() {
 		return skill_slno;
 	}

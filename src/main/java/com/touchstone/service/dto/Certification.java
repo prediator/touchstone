@@ -9,13 +9,13 @@ public class Certification {
 
 	private String $class;
 
-	private String certification_slno;
+	private String certification_slno = "";
 
-	private String courseName;
+	private String courseName= "";
 
-	private String institute;
+	private String institute= "";
 
-	private String yearOfPassing;
+	private String yearOfPassing= "";
 
 	private String[] supportingDocumentLinks;
 

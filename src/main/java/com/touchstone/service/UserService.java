@@ -131,6 +131,7 @@ public class UserService {
         newUser.setLastName(newUser.getLastName());
         newUser.setEmail(newUser.getEmail());
         newUser.setLangKey(newUser.getLangKey());
+        newUser.setHealthId(newUser.getHealthId());
         // new user is not active
         newUser.setActivated(false);
         // new user gets registration key
@@ -156,6 +157,7 @@ public class UserService {
         newUser.setLastName("");
         newUser.setEmail(newUser.getEmail());
         newUser.setLangKey(newUser.getLangKey());
+        newUser.setHealthId(newUser.getHealthId());
         // new user is not active
         newUser.setActivated(false);
         // new user gets registration key
@@ -275,6 +277,10 @@ public class UserService {
 
     public Optional<User> getUserWithAuthoritiesByLogin(String login) {
         return userRepository.findOneByLogin(login);
+    }
+    
+    public Optional<User> getUserWithAuthoritiesByEmailId(String login) {
+        return userRepository.findOneByEmailIgnoreCase(login);
     }
 
     public Optional<User> getUserWithAuthorities(String id) {

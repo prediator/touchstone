@@ -5,13 +5,13 @@ package com.touchstone.service.dto;
  */
 public class SkillDTO {
 
-	private String $class;
+	private String $class="";
 	
 	private Skills skills;
 
 	private String id;
 
-	private String profile;
+	private String profile="";
 
 	public String get$class() {
 		return $class;

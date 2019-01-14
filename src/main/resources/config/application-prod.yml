@@ -22,7 +22,7 @@ spring:
         host: smtp.gmail.com
         port: 587
         username: umodhe@ridgelift.io
-        password: 'vtk102sl&'
+        password: 'vtk102sl*'
         tls: true
         protocol: smtp
         properties.mail.smtp:
@@ -32,7 +32,11 @@ spring:
     thymeleaf:
         cache: true
 
-
+amazonProperties:
+    endpointUrl: https://s3.console.aws.amazon.com
+    accessKey: AKIAJJ2K72I5Y3U5F4WQ
+    secretKey: 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
+    bucketName: touchstonepoc
 server:
     port: 8080
     compression:

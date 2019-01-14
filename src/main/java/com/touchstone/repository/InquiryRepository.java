@@ -14,5 +14,4 @@ import com.touchstone.domain.Inquiry;
 @Repository
 public interface InquiryRepository extends MongoRepository<Inquiry, String> {
 	
-	List<Inquiry> findAllByEmail(Pageable pageable, String user);
 }

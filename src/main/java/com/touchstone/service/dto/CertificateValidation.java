@@ -7,17 +7,17 @@ public class CertificateValidation {
 
 	private String $class;
 
-	private String validationBy;
+	private String validationBy= "";
 
-	private String validationStatus;
+	private String validationStatus= "";
 
-	private String validationType;
+	private String validationType= "";
 
-	private String validationDate;
+	private String validationDate= "";
 
-	private String validationEmail;
+	private String validationEmail= "";
 
-	private String validationNote;
+	private String validationNote= "";
 
 	public String get$class() {
 		return $class;

@@ -88,8 +88,52 @@ public class User implements Serializable {
 	@Field("reset_date")
 	private Instant resetDate = null;
 
+	@Field("profile_id")
+	private String profileId;
+
+	@Field("health_id")
+	private String healthId;
+
+	@Field("personal_id")
+	private String personalId;
+	
+	@Field("image")
+	private String image;
+
 	@JsonIgnore
 	private Set<Authority> authorities = new HashSet<>();
+
+	public String getHealthId() {
+		return healthId;
+	}
+
+	public String getImage() {
+		return image;
+	}
+
+	public void setImage(String image) {
+		this.image = image;
+	}
+
+	public String getPersonalId() {
+		return personalId;
+	}
+
+	public void setPersonalId(String personalId) {
+		this.personalId = personalId;
+	}
+
+	public void setHealthId(String healthId) {
+		this.healthId = healthId;
+	}
+
+	public String getProfileId() {
+		return profileId;
+	}
+
+	public void setProfileId(String profileId) {
+		this.profileId = profileId;
+	}
 
 	public String getLogin() {
 		return login;
@@ -232,8 +276,10 @@ public class User implements Serializable {
 
 	@Override
 	public String toString() {
-		return "User{" + "login='" + login + '\'' + ", firstName='" + firstName + '\'' + ", lastName='" + lastName
-				+ '\'' + ", email='" + email + '\'' + ", imageUrl='" + imageUrl + '\'' + ", activated='" + activated
-				+ '\'' + ", langKey='" + langKey + '\'' + ", activationKey='" + activationKey + '\'' + "}";
+		return "User [userId=" + userId + ", login=" + login + ", userType=" + userType + ", firstName=" + firstName
+				+ ", lastName=" + lastName + ", enterpriseName=" + enterpriseName + ", password=" + password
+				+ ", email=" + email + ", activated=" + activated + ", langKey=" + langKey + ", imageUrl=" + imageUrl
+				+ ", activationKey=" + activationKey + ", resetKey=" + resetKey + ", resetDate=" + resetDate
+				+ ", profileId=" + profileId + ", authorities=" + authorities + "]";
 	}
 }

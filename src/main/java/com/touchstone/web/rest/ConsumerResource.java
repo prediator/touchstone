@@ -4,19 +4,25 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
-import javax.validation.Valid;
+import javax.mail.internet.MimeMessage;
 
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.StringHttpMessageConverter;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -27,6 +33,8 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
+import org.thymeleaf.context.Context;
+import org.thymeleaf.spring4.SpringTemplateEngine;
 
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.auth.AWSCredentials;
@@ -54,14 +62,16 @@ import com.touchstone.service.dto.Consumer;
 import com.touchstone.service.dto.ConsumerDTO;
 import com.touchstone.service.dto.Enterprise;
 import com.touchstone.service.dto.EnterpriseDTO;
+import com.touchstone.service.dto.Health;
+import com.touchstone.service.dto.Personal;
+import com.touchstone.service.dto.Profile;
 import com.touchstone.service.dto.Update;
 import com.touchstone.service.dto.Validation;
 import com.touchstone.service.util.RandomUtil;
 import com.touchstone.web.rest.errors.EmailAlreadyUsedException;
-import com.touchstone.web.rest.errors.InvalidPasswordException;
 import com.touchstone.web.rest.util.GenerateOTP;
-import com.touchstone.web.rest.vm.ManagedUserVM;
 
+import io.github.jhipster.config.JHipsterProperties;
 import ma.glasnost.orika.MapperFacade;
 import ma.glasnost.orika.MapperFactory;
 import ma.glasnost.orika.impl.DefaultMapperFactory;
@@ -86,94 +96,25 @@ public class ConsumerResource {
 	private final InquiryRepository inquiryRepository;
 
 	private GenerateOTP generateOtp = new GenerateOTP();
+	private final SpringTemplateEngine templateEngine;
+	private final MessageSource messageSource;
+	private final JHipsterProperties jHipsterProperties;
+
+	private final JavaMailSender javaMailSender;
 
 	public ConsumerResource(UserService userService, MailService mailService, UserRepository userRepository,
-			DocsRepository docsRepository, InquiryRepository inquiryRepository) {
+			DocsRepository docsRepository, InquiryRepository inquiryRepository, SpringTemplateEngine templateEngine,
+			MessageSource messageSource, JHipsterProperties jHipsterProperties, JavaMailSender javaMailSender) {
 		super();
 		this.userService = userService;
 		this.mailService = mailService;
 		this.userRepository = userRepository;
 		this.docsRepository = docsRepository;
 		this.inquiryRepository = inquiryRepository;
-	}
-
-	/**
-	 * POST /register : register Consumer.
-	 *
-	 * @param consumer
-	 *            the consumer data
-	 * @throws JsonProcessingException
-	 */
-	@PostMapping("/Consumer")
-	@Timed
-	@ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<String> registerAccount(@RequestBody Consumer consumer) throws JsonProcessingException {
-
-		User data = new User();
-
-		data.setActivated(false);
-		data.setUserId(RandomUtil.generateActivationKey());
-		data.setEmail(consumer.getEmail().toLowerCase());
-		data.setFirstName(consumer.getFirstName());
-		data.setLastName(consumer.getLastName());
-		data.setPassword(consumer.getPassword());
-		data.setUserType(UserType.CONSUMER.name());
-		data.setLangKey(consumer.getLangKey());
-		userRepository.findOneByEmailIgnoreCase(data.getEmail()).ifPresent(u -> {
-			throw new EmailAlreadyUsedException();
-		});
-
-		userService.registerConsumer(data);
-
-		MapperFactory mapperFactory = new DefaultMapperFactory.Builder().build();
-		mapperFactory.classMap(Consumer.class, ConsumerDTO.class);
-		MapperFacade mapper = mapperFactory.getMapperFacade();
-		ConsumerDTO dest = mapper.map(consumer, ConsumerDTO.class);
-
-		dest.setGender(null);
-		dest.setUserId(data.getUserId());
-		dest.set$class("org.touchstone.basic.Consumer");
-		dest.getAddress().set$class("org.touchstone.basic.Address");
-
-		ObjectMapper mappers = new ObjectMapper();
-		String jsonInString = mappers.writeValueAsString(dest);
-		System.out.println(jsonInString);
-
-		RestTemplate rt = new RestTemplate();
-		rt.getMessageConverters().add(new StringHttpMessageConverter());
-		String uri = new String(Constants.Url + "/Consumer");
-		rt.postForObject(uri, dest, ConsumerDTO.class);
-		mailService.sendEmail(
-				data.getEmail(), "Account Created", "http://ridgelift.io:8080/api/verifyc/"
-						+ generateOtp.storeOTP(data.getUserId()) + "/" + data.getEmail() + "/" + data.getUserId(),
-				false, true);
-		return new ResponseEntity(HttpStatus.CREATED);
-
-	}
-
-	@GetMapping("/verifyc/{code}/{id:.+}/{uid}")
-	@Timed
-	@ResponseStatus(HttpStatus.CREATED)
-	public String validedEmail(@PathVariable int code, @PathVariable String id, @PathVariable String uid) {
-
-		if (generateOtp.checkOTP(uid, code) == 1) {
-			Validation valid = new Validation();
-			valid.set$class("org.touchstone.basic.ValidateEmail");
-			valid.setIsEmailValidated(true);
-			valid.setConsumer("resource:org.touchstone.basic.Consumer#" + uid);
-			RestTemplate rt = new RestTemplate();
-			rt.getMessageConverters().add(new StringHttpMessageConverter());
-			String uri = new String(Constants.Url + "/ValidateEmail");
-			rt.postForObject(uri, valid, Validation.class);
-
-			User user = userRepository.findOne(uid);
-			user.setActivated(true);
-			userRepository.save(user);
-			generateOtp.removeOtp(id);
-			return "Success";
-		}
-
-		return "Failure";
+		this.templateEngine = templateEngine;
+		this.messageSource = messageSource;
+		this.jHipsterProperties = jHipsterProperties;
+		this.javaMailSender = javaMailSender;
 	}
 
 	@GetMapping("/verifye/{code}/{id:.+}/{uid}")
@@ -205,8 +146,7 @@ public class ConsumerResource {
 	/**
 	 * POST /register : register Enterprise.
 	 *
-	 * @param consumer
-	 *            the consumer data
+	 * @param consumer the consumer data
 	 * @throws JsonProcessingException
 	 */
 	@PostMapping("/Enterprise")
@@ -244,6 +184,14 @@ public class ConsumerResource {
 
 		rt.postForObject(uri, dest, EnterpriseDTO.class);
 		userService.registerEnterprise(data);
+
+		Profile profile = new Profile();
+
+		RestTemplate rt1 = new RestTemplate();
+		rt1.getMessageConverters().add(new StringHttpMessageConverter());
+		String uri1 = new String(Constants.Url + "/Profile");
+		rt1.postForObject(uri1, profile, Profile.class);
+
 		mailService.sendEmail(
 				data.getEmail(), "Account Created", "http://ridgelift.io:8080/api/verifye/"
 						+ generateOtp.storeOTP(data.getUserId()) + "/" + data.getEmail() + "/" + data.getUserId(),
@@ -264,8 +212,7 @@ public class ConsumerResource {
 	/**
 	 * POST /ValidateEmail : email validation
 	 *
-	 * @param email
-	 *            the email data
+	 * @param email the email data
 	 */
 	@PostMapping("/ValidateEmail")
 	@Timed
@@ -283,10 +230,8 @@ public class ConsumerResource {
 	/**
 	 * POST /ValidateMobile : to validate otp
 	 *
-	 * @param phone
-	 *            the phone number
-	 * @param id
-	 *            the otp
+	 * @param phone the phone number
+	 * @param id    the otp
 	 */
 	@GetMapping("/ValidateMobile/{id}/{phone}/{user}")
 	@Timed
@@ -317,8 +262,7 @@ public class ConsumerResource {
 	/**
 	 * POST /sentOtp : to sent otp
 	 *
-	 * @param phone
-	 *            the phone data
+	 * @param phone the phone data
 	 */
 	@GetMapping("/sentOtp/{phone}")
 	@Timed
@@ -346,8 +290,7 @@ public class ConsumerResource {
 	/**
 	 * POST /ValidateAddress : Address validation
 	 *
-	 * @param address
-	 *            the phone data
+	 * @param address the phone data
 	 */
 	@PostMapping("/ValidateAddress")
 	@Timed
@@ -365,8 +308,7 @@ public class ConsumerResource {
 	/**
 	 * POST /UpdateMobile : Address validation
 	 *
-	 * @param address
-	 *            the phone data
+	 * @param address the phone data
 	 */
 	@PostMapping("/UpdateMobile")
 	@Timed
@@ -384,8 +326,7 @@ public class ConsumerResource {
 	/**
 	 * POST /ValidateAddress : Address validation
 	 *
-	 * @param address
-	 *            the phone data
+	 * @param address the phone data
 	 */
 	@PostMapping("/UpdateAddress")
 	@Timed
@@ -402,8 +343,7 @@ public class ConsumerResource {
 	/**
 	 * POST /UpdateEmail : Address validation
 	 *
-	 * @param address
-	 *            the phone data
+	 * @param address the phone data
 	 */
 	@PostMapping("/UpdateEmail")
 	@Timed
@@ -420,8 +360,7 @@ public class ConsumerResource {
 	/**
 	 * POST /UpdateName : Address validation
 	 *
-	 * @param address
-	 *            the phone data
+	 * @param address the phone data
 	 */
 	@PostMapping("/UpdateName")
 	@Timed
@@ -438,8 +377,7 @@ public class ConsumerResource {
 	/**
 	 * POST /Consumer/{userid} : To get Consumer
 	 *
-	 * @param userid
-	 *            the user id
+	 * @param userid the user id
 	 */
 	@GetMapping("/Consumer/{userid}")
 	@Timed
@@ -463,15 +401,18 @@ public class ConsumerResource {
 	@Timed
 	@ResponseStatus(HttpStatus.CREATED)
 	public void test() {
-		mailService.sendEmail("my3d3d@gmail.com", "Account Created", "http://ridgelift.io:8080/api/validedEmail/"
-				+ generateOtp.storeOTP("my3d3d@gmail.com") + "/" + "my3d3d@gmail.com", false, true);
+		Locale locale = Locale.forLanguageTag("en");
+		Context context = new Context(locale);
+		context.setVariable("url", "http://ridgelift.io:8080/api/verifyc/");
+		String content = templateEngine.process("consumer", context);
+		String subject = messageSource.getMessage("email.activation.title", null, locale);
+		sendEmail("my3d3d@gmail.com", subject, content, false, true);
 	}
 
 	/**
 	 * POST /Consumer/email/{email} : To get Consumer by Email
 	 *
-	 * @param email
-	 *            the user email
+	 * @param email the user email
 	 */
 	@GetMapping("/Consumer/email/{email:.+}")
 	@Timed
@@ -492,8 +433,7 @@ public class ConsumerResource {
 	/**
 	 * POST /Enterprise/{userid} : To get Enterprise
 	 *
-	 * @param userid
-	 *            the id
+	 * @param userid the id
 	 */
 	@GetMapping("/Enterprise/{userid}")
 	@Timed
@@ -516,8 +456,7 @@ public class ConsumerResource {
 	/**
 	 * POST /Enterprise/email/{email} : To get Enterprise by Email
 	 *
-	 * @param email
-	 *            the user email
+	 * @param email the user email
 	 */
 	@GetMapping("/Enterprise/email/{email:.+}")
 	@Timed
@@ -538,8 +477,7 @@ public class ConsumerResource {
 	/**
 	 * POST /Enterprise/email/{email} : To get Enterprise by Email
 	 *
-	 * @param email
-	 *            the user email
+	 * @param email the user email
 	 */
 	@GetMapping("/documents/{id}")
 	@Timed
@@ -591,8 +529,7 @@ public class ConsumerResource {
 	/**
 	 * POST /UpdateName : Address validation
 	 *
-	 * @param address
-	 *            the phone data
+	 * @param address the phone data
 	 */
 	@PostMapping("/inquiry")
 	@Timed
@@ -602,7 +539,7 @@ public class ConsumerResource {
 		inquiryRepository.save(inquiry);
 		mailService
 				.sendEmail(
-						"my3d3d@gmail.com", "Inquiry", "Name: " + inquiry.getName() + "\n Phone " + inquiry.getPhone()
+						"info@ridgelift.io", "Inquiry", "Name: " + inquiry.getName() + "\n Phone " + inquiry.getPhone()
 								+ "\n Email: " + inquiry.getEmail() + "\n Message " + inquiry.getMessage(),
 						false, true);
 		return new ResponseEntity(HttpStatus.CREATED);
@@ -612,7 +549,7 @@ public class ConsumerResource {
 	public void uploadFileToS3(MultipartFile file, String id) {
 		AWSCredentials credentials = null;
 		try {
-			credentials = new BasicAWSCredentials("AKIAJ3V3PHYVKBNK3KEA", "cv7xkpJkTY4oVRrwuL7EKHnkrc3NUlDzV60rnduy");
+			credentials = new BasicAWSCredentials("AKIAJJ2K72I5Y3U5F4WQ", "JmNXnTymXEUTMFnroK5mSzMrt79Q6jzveXqAfhbt");
 		} catch (Exception e) {
 			throw new AmazonClientException("Cannot load the credentials from the credential profiles file. "
 					+ "Please make sure that your credentials file is at the correct "
@@ -629,6 +566,30 @@ public class ConsumerResource {
 		s3.putObject(new PutObjectRequest(bucketName, id + "/" + fileName, new File("/tmp/" + fileName))
 				.withCannedAcl(CannedAccessControlList.PublicRead));
 
+	}
+
+	@Async
+	public void sendEmail(String to, String subject, String content, boolean isMultipart, boolean isHtml) {
+		log.debug("Send email[multipart '{}' and html '{}'] to '{}' with subject '{}' and content={}", isMultipart,
+				isHtml, to, subject, content);
+
+		// Prepare message using a Spring helper
+		MimeMessage mimeMessage = javaMailSender.createMimeMessage();
+		try {
+			MimeMessageHelper message = new MimeMessageHelper(mimeMessage, isMultipart, StandardCharsets.UTF_8.name());
+			message.setTo(to);
+			message.setFrom(jHipsterProperties.getMail().getFrom());
+			message.setSubject(subject);
+			message.setText(content, isHtml);
+			javaMailSender.send(mimeMessage);
+			log.debug("Sent email to User '{}'", to);
+		} catch (Exception e) {
+			if (log.isDebugEnabled()) {
+				log.warn("Email could not be sent to user '{}'", to, e);
+			} else {
+				log.warn("Email could not be sent to user '{}': {}", to, e.getMessage());
+			}
+		}
 	}
 
 }
